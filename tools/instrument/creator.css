@@ -1,0 +1,32 @@
+body {
+  display: flex;
+  justify-content: center;
+}
+
+p {
+  margin-block-start: 0;
+}
+
+input, button {
+  margin-top: 15px;
+}
+
+span {
+  display: inline;
+}
+
+.instructions {
+  width: 800px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.error {
+  color: red;
+  font-weight: 600;
+}
+
+.hidden {
+  visibility: hidden;
+}

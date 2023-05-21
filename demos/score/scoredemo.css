@@ -1,0 +1,74 @@
+label {
+  margin: auto 2px auto 6px;
+}
+
+input {
+  width: 40px;
+}
+
+#tempoControls {
+  margin-top: 30px;
+}
+
+.status, .controls {
+  display: flex;
+  justify-content: center;
+  margin: 12px auto 12px auto;
+}
+
+.button {
+  margin: 10px 3px 0 3px;
+  background-color: #CCCCCC;
+  border: 1px solid #CCCCCC;
+  border-radius: 2px;
+  padding: 10px 20px;
+  text-align: center;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.button:hover {
+  cursor: pointer;
+  background-color: #999999;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.chord {
+  display: flex;
+  margin: 2px;
+  padding: 3px 5px 3px 0;
+  border-radius: 3px;
+  border: 1px solid #CCCCCC;
+  background-color: white;
+}
+
+#addChord {
+  width: 20px;
+  margin-left: 10px;
+}
+
+.chord:last-child #addChord {
+  cursor: pointer;
+  background:
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  background-position:center;
+  background-size: 50% 2px,2px 50%;
+  background-repeat:no-repeat;
+}
+
+.chord:last-child #addChord:hover {
+  background-color: #CCCCCC;
+}
+
+.disabled {
+  color:  grey;
+  opacity: 0.4;
+  pointer-events: none;
+}

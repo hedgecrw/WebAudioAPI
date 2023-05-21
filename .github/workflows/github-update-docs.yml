@@ -1,0 +1,47 @@
+name: WebAudioAPI Library Update Action
+
+# Build documentation whenever there are new commits on main
+on:
+  workflow_dispatch:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# Restrict permissions for CI jobs
+permissions:
+  contents: read
+
+# Build documentation and upload the static HTML files as an artifact
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: mkdir docs/js && cp -rf library/webaudioapi docs/js/
+      - run: cp -f demos/netsblox/*.js docs/js/ && cp -f demos/piano/*.js docs/js/ && cp -f demos/score/*.js docs/js/ && cp -f tools/instrument/*.js docs/js/
+      - run: find demos/netsblox/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/netsbloxdemo.html
+      - run: find demos/piano/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/pianodemo.html
+      - run: find demos/score/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/scoredemo.html
+      - run: find tools/instrument/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/instrument-creator.html
+      - run: tar --directory docs/ -hcf artifact.tar .
+      - uses: actions/upload-artifact@v3
+        with:
+          name: github-pages
+          path: ./artifact.tar
+          retention-days: 1
+
+  # Deploy the artifact to GitHub pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1

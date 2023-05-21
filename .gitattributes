@@ -1,0 +1,14 @@
+* text=auto
+*.gz binary
+*.xz binary
+*.exe binary
+*.dll binary
+*.pdb binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
+*.aac binary
+*.sf2 binary
+*.sf3 binary
+*.sfz binary
+*.inst binary

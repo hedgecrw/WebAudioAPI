@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>NetsBlox Functionality Demo</title>
+    <link rel="stylesheet" href="netsbloxdemo.css">
+    <script>var jsPath = '/js/';</script>
+    <script type="module" src="js/webaudioapi/webAudioAPI.js"></script>
+    <script type="module" src="js/netsblox.js"></script>
+    <script type="module" src="js/netsbloxdemo.js"></script>
+  </head>
+
+  <body>
+
+    <h1>NetsBlox Functionality Demo</h1>
+
+    <div id="playback_controls">
+      <h2>Playback Controls</h2>
+      <div class="div_container">
+        <div>
+          <label for="time_signature_numerator">Time Signature:</label>
+          <input type="number" name="time_signature_numerator" id="time_signature_numerator" class="time_signature" value=4>
+          <label for="time_signature_denominator">/&nbsp;</label>
+          <input type="number" name="time_signature_denominator" id="time_signature_denominator" class="time_signature" value=4>
+          <label for="bpmBase">&nbsp;&nbsp;&nbsp;&nbsp;BPM:</label>
+          <select name="bpm_base" id="bpm_base"></select>
+          <label for="bpm">=&nbsp;</label>
+          <input type="number" name="bpm" id="bpm" class="time_signature" value=98>
+        </div>
+        <button type="button" id="play_button" onclick="play()">Play</button>
+        <button type="button" id="resume_button" disabled="true" onclick="resume()">Resume</button>
+        <button type="button" id="pause_button" disabled="true" onclick="pause()">Pause</button>
+        <button type="button" id="stop_button" disabled="true" onclick="stop()">Stop</button>
+      </div>
+    </div>
+
+    <div id="master_effects">
+      <h2>Master Effects (Async)</h2>
+      <div class="div_container">
+        <label for="master_volume">Volume:</label>
+        <input type="range" id="master_volume" name="master_volume" min="0" max="100" value="50">
+        <label for="master_panning" class="label_continuation">Panning:</label>
+        <b>L</b><input type="range" id="master_panning" name="master_panning" min="0" max="100" value="50"><b>R</b>
+        <label for="master_reverb" class="label_continuation">Reverb:</label>
+        <input type="range" id="master_reverb" name="master_reverb" min="0" max="100" value="0">
+      </div>
+    </div>
+
+    <div id="track_piano">
+      <h2>Track: Piano</h2>
+      <div class="div_container">
+        <div>
+          <input type="checkbox" id="piano_enabled" name="piano_enabled" checked>
+          <label for="piano_enabled">Enabled</label>
+        </div>
+        <h3>Track Effects (Async)</h3>
+        <div class="track_controls">
+          <label for="piano_volume">Volume:</label>
+          <input type="range" id="piano_volume" name="piano_volume" min="0" max="100" value="100">
+          <label for="piano_panning" class="label_continuation">Panning:</label>
+          <b>L</b><input type="range" id="piano_panning" name="piano_panning" min="0" max="100" value="50"><b>R</b>
+          <label for="piano_reverb" class="label_continuation">Reverb:</label>
+          <input type="range" id="piano_reverb" name="piano_reverb" min="0" max="100" value="0">
+        </div>
+        <h3>Track Script (Sync)</h3>
+        <div class="track_controls">
+          <div>When <b>PLAY</b> Received:</div>
+          <div class="play_script" id="piano_script">
+            <div class="chord loop">
+              <input type="checkbox" id="piano_looped" name="piano_looped" checked>
+              <label for="piano_looped">Loop Forever</label>
+            </div>
+            <div class="chord instrument">
+              <label for="piano_instrument">Instrument:</label>
+              <select name="piano_instrument" id="piano_instrument"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="track_guitar">
+      <h2>Track: Guitar</h2>
+      <div class="div_container">
+        <div>
+          <input type="checkbox" id="guitar_enabled" name="guitar_enabled" checked>
+          <label for="guitar_enabled">Enabled</label>
+        </div>
+        <h3>Track Effects (Async)</h3>
+        <div class="track_controls">
+          <label for="guitar_volume">Volume:</label>
+          <input type="range" id="guitar_volume" name="guitar_volume" min="0" max="100" value="100">
+          <label for="guitar_panning" class="label_continuation">Panning:</label>
+          <b>L</b><input type="range" id="guitar_panning" name="guitar_panning" min="0" max="100" value="50"><b>R</b>
+          <label for="guitar_reverb" class="label_continuation">Reverb:</label>
+          <input type="range" id="guitar_reverb" name="guitar_reverb" min="0" max="100" value="0">
+        </div>
+        <h3>Track Script (Sync)</h3>
+        <div class="track_controls">
+          <div>When <b>PLAY</b> Received:</div>
+          <div class="play_script" id="guitar_script">
+            <div class="clip loop">
+              <input type="checkbox" id="guitar_looped" name="guitar_looped" checked>
+              <label for="guitar_looped">Loop Forever</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="track_drums">
+      <h2>Track: Drums</h2>
+      <div class="div_container">
+        <div>
+          <input type="checkbox" id="drums_enabled" name="drums_enabled" checked>
+          <label for="drums_enabled">Enabled</label>
+        </div>
+        <h3>Track Effects (Async)</h3>
+        <div class="track_controls">
+          <label for="drums_volume">Volume:</label>
+          <input type="range" id="drums_volume" name="drums_volume" min="0" max="100" value="100">
+          <label for="drums_panning" class="label_continuation">Panning:</label>
+          <b>L</b><input type="range" id="drums_panning" name="drums_panning" min="0" max="100" value="50"><b>R</b>
+          <label for="drums_reverb" class="label_continuation">Reverb:</label>
+          <input type="range" id="drums_reverb" name="drums_reverb" min="0" max="100" value="0">
+        </div>
+        <h3>Track Script (Sync)</h3>
+        <div class="track_controls">
+          <div>When <b>PLAY</b> Received:</div>
+          <div class="play_script" id="drums_script">
+            <div class="clip loop">
+              <input type="checkbox" id="drums_looped" name="drums_looped" checked>
+              <label for="drums_looped">Loop Forever</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+
+</html>

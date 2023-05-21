@@ -110,8 +110,5 @@ dist
 # TernJS port file
 .tern-port
 
-# Root-level HTML files
-*.html
-
 # Raw SoundFont/audio files
 rawAudioData/

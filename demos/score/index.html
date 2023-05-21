@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>Audio Generator Score Creation Demo</title>
+    <link rel="stylesheet" href="scoredemo.css">
+    <script>var jsPath = '/js/';</script>
+    <script type="module" src="js/webaudioapi/webAudioAPI.js"></script>
+    <script type="module" src="js/scoredemo.js"></script>
+  </head>
+
+  <body>
+
+    <div class="status">
+      Status:&nbsp;<span id="status">Not Ready</span>
+    </div>
+
+    <div class="status">
+      <label for="instrument">Instrument:&nbsp;</label>
+      <select name="instrument" id="instrument" onchange="changeInstrument()"></select>
+    </div>
+
+    <div class="status" id="tempoControls">
+      <label for="timeSigNumerator">Time Signature:&nbsp;</label>
+      <input type="number" name="timeSigNumerator" id="timeSigNumerator" value=3>
+      <label for="timeSigDenominator">&nbsp;/&nbsp;</label>
+      <input type="number" name="timeSigDenominator" id="timeSigDenominator" value=4>
+      <label for="bpmBase">&nbsp;&nbsp;&nbsp;&nbsp;BPM:&nbsp;</label>
+      <select name="bpmBase" id="bpmBase"></select>
+      <label for="bpm">&nbsp;=&nbsp;</label>
+      <input type="number" name="bpm" id="bpm" value=160>
+    </div>
+
+    <div id="score" class="score disabled"></div>
+
+    <div id="controls" class="controls disabled">
+      <div id="clearButton" class="button" onclick="clearScore()">Clear Score</div>
+      <div id="playButton" class="button" onclick="playScore()">Play</div>
+      <div id="pauseButton" class="button disabled" onclick="pause()">Pause</div>
+      <div id="resumeButton" class="button disabled" onclick="resume()">Resume</div>
+      <div id="stopButton" class="button disabled" onclick="stop()">Stop</div>
+    </div>
+
+  </body>
+
+</html>

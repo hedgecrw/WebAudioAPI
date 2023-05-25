@@ -75,8 +75,8 @@ export class Instrument {
 
    static async loadInstrument(audioContext, name, url) {
       const instrument = new Instrument(name);
-      const loadPromise = instrument.#load(audioContext, url);
-      return new Promise(async resolve => { await loadPromise; resolve(instrument); });
+      await instrument.#load(audioContext, url);
+      return instrument;
    }
 
    getNote(audioContext, note) {

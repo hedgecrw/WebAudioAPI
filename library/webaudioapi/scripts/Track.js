@@ -115,7 +115,7 @@ export class Track {
    delete() {
       for (const source of this.#audioSources)
          source.stop();
-      for (const source in this.#asyncAudioSources)
+      for (const source of this.#asyncAudioSources)
          source.sourceNode.stop();
       if (this.panningControlAsync != null)
          this.panningControlAsync.disconnect();

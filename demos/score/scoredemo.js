@@ -167,12 +167,14 @@ window.onload = () => {
    loadHappyBirthday();
    const instrumentSelector = document.getElementById('instrument');
    instrumentSelector.add(new Option('Choose an instrument'));
-   window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
    window.addEventListener('trackdone', () => {
       document.getElementById('clearButton').classList.remove('disabled');
       document.getElementById('playButton').classList.remove('disabled');
       document.getElementById('pauseButton').classList.add('disabled');
       document.getElementById('resumeButton').classList.add('disabled');
       document.getElementById('stopButton').classList.add('disabled');
+   });
+   window.audioAPI.loadInstrumentAssets('js/instruments').then(() => {
+      window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
    });
 };

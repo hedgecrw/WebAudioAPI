@@ -26,21 +26,21 @@ function releaseBb4() { window.audioAPI.stopNote('defaultTrack', window.b4b); de
 function releaseB4() { window.audioAPI.stopNote('defaultTrack', window.b4); delete window.b4; }
 function releaseC5() { window.audioAPI.stopNote('defaultTrack', window.c5); delete window.c5; }
 
-function pressNote(event) {
+async function pressNote(event) {
    if (!event.repeat) {
-      if (event.keyCode === 65) playC4();
-      if (event.keyCode === 87) playDb4();
-      if (event.keyCode === 83) playD4();
-      if (event.keyCode === 69) playEb4();
-      if (event.keyCode === 68) playE4();
-      if (event.keyCode === 70) playF4();
-      if (event.keyCode === 84) playGb4();
-      if (event.keyCode === 71) playG4();
-      if (event.keyCode === 89) playAb4();
-      if (event.keyCode === 72) playA4();
-      if (event.keyCode === 85) playBb4();
-      if (event.keyCode === 74) playB4();
-      if (event.keyCode === 75) playC5();
+      if (event.keyCode === 65) await playC4();
+      if (event.keyCode === 87) await playDb4();
+      if (event.keyCode === 83) await playD4();
+      if (event.keyCode === 69) await playEb4();
+      if (event.keyCode === 68) await playE4();
+      if (event.keyCode === 70) await playF4();
+      if (event.keyCode === 84) await playGb4();
+      if (event.keyCode === 71) await playG4();
+      if (event.keyCode === 89) await playAb4();
+      if (event.keyCode === 72) await playA4();
+      if (event.keyCode === 85) await playBb4();
+      if (event.keyCode === 74) await playB4();
+      if (event.keyCode === 75) await playC5();
    }
 }
 
@@ -74,7 +74,7 @@ async function changeInstrument() {
    }
 }
 
-window.addEventListener('keydown', pressNote);
+window.addEventListener('keydown', e => { (async() => { await pressNote(e); })(); });
 window.addEventListener('keyup', releaseNote);
 
 window.onload = () => {
@@ -82,5 +82,7 @@ window.onload = () => {
    window.audioAPI.createTrack('defaultTrack');
    const instrumentSelector = document.getElementById('instrument');
    instrumentSelector.add(new Option('Choose an instrument'));
-   window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
+   window.audioAPI.loadInstrumentAssets('js/instruments').then(() => {
+      window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
+   });
 };

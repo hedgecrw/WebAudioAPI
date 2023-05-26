@@ -150,7 +150,9 @@ function loadPianoScript() {
    addChord(document.getElementById('piano_script'), window.pianoItemIndex++, 'Quarter Note', ['D4']);
    addChord(document.getElementById('piano_script'), window.pianoItemIndex++, 'Quarter Note', ['D4']);
    addChord(document.getElementById('piano_script'), window.pianoItemIndex++, 'Quarter Note', ['D4']);
-   window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
+   window.audioAPI.loadInstrumentAssets('js/instruments').then(() => {
+      window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
+   });
 }
 
 function loadGuitarScript() {

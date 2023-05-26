@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: mkdir docs/js && cp -rf library/webaudioapi docs/js/
+      - run: mkdir docs/js && cp -rf library/webaudioapi docs/js/ && cp -rf assets/{effects,instruments} docs/js/
       - run: cp -f demos/netsblox/*.js docs/js/ && cp -f demos/piano/*.js docs/js/ && cp -f demos/score/*.js docs/js/ && cp -f tools/instrument/*.js docs/js/
       - run: find demos/netsblox/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/netsbloxdemo.html
       - run: find demos/piano/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/pianodemo.html

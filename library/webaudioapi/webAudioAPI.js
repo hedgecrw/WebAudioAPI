@@ -1,10 +1,12 @@
-import { Track } from './scripts/Track.js';
-import { Duration, Note, Effect } from './scripts/Constants.js';
-import { getAvailableInstruments, loadInstrument } from './scripts/InstrumentLibrary.js';
-import { getAvailableReverbEffects, loadEffect } from './scripts/EffectLibrary.js';
+import { Duration, Note } from './scripts/Constants.js';
+import { createTrack as createTrackImpl } from './scripts/Track.js';
+import { Instrument } from './scripts/Instrument.js';
+import { Effect } from './scripts/Effect.js';
 
 class WebAudioAPI {
    #tracks = {};
+   #effectListing = {};
+   #instrumentListing = {};
  
    constructor() {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -31,31 +33,57 @@ class WebAudioAPI {
    }
 
    get availableInstruments() {
-      return getAvailableInstruments();
+      return Object.keys(this.#instrumentListing);
    }
 
-   get availableReverbEffects() {
-      return getAvailableReverbEffects();
+   get availableEffects() {
+      return Object.keys(this.#effectListing);
+   }
+
+   async loadInstrumentAssets(instrumentAssetsLibraryLocation) {
+      const cleanLocation = instrumentAssetsLibraryLocation.replace(/\/$/, '');
+      const response = await fetch(cleanLocation + '/instrumentLibrary.json', {
+         headers: { 'Accept': 'application/json' }
+      });
+      const instrumentListing = await response.json();
+      Object.keys(instrumentListing).forEach((instrumentName) => {
+         this.#instrumentListing[instrumentName] = cleanLocation + instrumentListing[instrumentName];
+      });
+   }
+
+   async loadEffectAssets(effectAssetsLibraryLocation) {
+      const cleanLocation = effectAssetsLibraryLocation.replace(/\/$/, '');
+      const response = await fetch(cleanLocation + '/effectLibrary.json', {
+         headers: { 'Accept': 'application/json' }
+      });
+      const effectListing = await response.json();
+      Object.keys(effectListing).forEach((effectName) => {
+         this.#effectListing[effectName] = cleanLocation + effectListing[effectName];
+      });
    }
 
    async retrieveInstrument(instrumentName) {
-      return loadInstrument(this.audioContext, instrumentName);
+      return (instrumentName in this.#instrumentListing) ?
+         await Instrument.loadInstrument(this.audioContext, instrumentName, this.#instrumentListing[instrumentName]) :
+         null;
    }
 
    async retrieveEffect(effectName) {
-      return loadEffect(this.audioContext, effectName);
+      return (effectName in this.#effectListing) ?
+         await Effect.loadEffect(this.audioContext, effectName, this.#effectListing[effectName]) :
+         null;
    }
 
    createTrack(trackName) {
       if (trackName in this.#tracks)
-         this.#tracks[trackName].delete();
-      this.#tracks[trackName] = new Track(this, trackName, this.sourceSinkNode);
+         this.#tracks[trackName].deleteTrack();
+      this.#tracks[trackName] = createTrackImpl(this, trackName, this.sourceSinkNode);
       return this.#tracks[trackName];
    }
 
    deleteTrack(trackName) {
       if (trackName in this.#tracks) {
-         this.#tracks[trackName].delete();
+         this.#tracks[trackName].deleteTrack();
          delete this.#tracks[trackName];
       }
    }
@@ -63,14 +91,14 @@ class WebAudioAPI {
    deleteAllTracks() {
       this.volumeControl.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.01);
       for (const trackName in this.#tracks) {
-         this.#tracks[trackName].delete();
+         this.#tracks[trackName].deleteTrack();
          delete this.#tracks[trackName];
       }
       setTimeout((function() { this.audioContext.suspend(); }).bind(this), 200);
    }
  
    currentInstrumentName(trackName) {
-      return (trackName in this.#tracks) ? this.#tracks[trackName].instrumentName : 'None';
+      return (trackName in this.#tracks) ? this.#tracks[trackName].instrumentName() : 'None';
    }
 
    changeInstrument(trackName, instrument) {

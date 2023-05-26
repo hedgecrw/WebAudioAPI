@@ -1,0 +1,12 @@
+{
+    "Grand Piano": "/piano/grand_piano.inst",
+    "Electric Bass": "/bass/electric_bass.inst",
+    "Bassoon": "/bassoon/bassoon.inst",
+    "Cello": "/cello/cello.inst",
+    "Acoustic Guitar": "/guitar/acoustic_guitar.inst",
+    "Electric Guitar": "/guitar/electric_guitar.inst",
+    "Nylon Guitar": "/guitar/nylon_guitar.inst",
+    "Harp": "/harp/harp.inst",
+    "Pipe Organ": "/organ/pipe_organ.inst",
+    "Violin": "/violin/violin.inst"
+}

@@ -10,6 +10,7 @@ $(OUTPUT_DIR) :
 
 libcopy :
 	cp -rf library/webaudioapi $(OUTPUT_DIR)/js/
+	cp -rf assets/{effects,instruments} $(OUTPUT_DIR)/js/
 
 netsblox : clean $(OUTPUT_DIR) libcopy
 	cp -f demos/$@/*.js $(OUTPUT_DIR)/js/

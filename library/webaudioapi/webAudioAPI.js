@@ -1,6 +1,5 @@
 import { Duration, Note } from './scripts/Constants.js';
 import { createTrack as createTrackImpl } from './scripts/Track.js';
-import { Effect } from './scripts/Effect.js';
 
 class WebAudioAPI {
    #tracks = {};
@@ -24,7 +23,7 @@ class WebAudioAPI {
       this.panningControl.pan.setValueAtTime(0.0, 0.0);
       this.sourceSinkNode.delayTime.setValueAtTime(0.0, 0.0);
       this.updateTempo(this.beatBase, this.beatsPerMinute, 4, 4);
-      this.updateVolume(this.globalVolume);
+      this.updateVolume(null, this.globalVolume);
    }
  
    get currentTime() {
@@ -106,23 +105,24 @@ class WebAudioAPI {
       this.measureLengthSeconds = (60.0 / beatsPerMinute) * beatBase * timeSignatureNumerator / timeSignatureDenominator;
    }
 
-   updateVolume(percent) {
-      this.globalVolume = percent;
-      this.volumeControl.gain.setTargetAtTime(this.globalVolume, this.audioContext.currentTime, 0.01);
+   updateVolume(trackName, percent, updateTime) {
+      if (trackName) {
+         if (trackName in this.#tracks)
+            this.#tracks[trackName].updateVolume(percent, updateTime);
+      }
+      else {
+         this.globalVolume = percent;
+         this.volumeControl.gain.setValueAtTime(this.globalVolume, updateTime == null ? this.audioContext.currentTime : updateTime);
+      }
    }
 
-   updatePanning(percent) {
-      this.panningControl.pan.setTargetAtTime((2 * percent) - 1, this.audioContext.currentTime, 0.01);
-   }
-
-   updateTrackVolume(trackName, percent, updateTime) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].updateVolume(percent, updateTime);
-   }
-
-   updateTrackPanning(trackName, percent, updateTime) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].updatePanning(percent, updateTime);
+   updatePanning(trackName, percent, updateTime) {
+      if (trackName) {
+         if (trackName in this.#tracks)
+            this.#tracks[trackName].updatePanning(percent, updateTime);
+      }
+      else
+         this.panningControl.pan.setValueAtTime((2 * percent) - 1, updateTime == null ? this.audioContext.currentTime : updateTime);
    }
 
    async playNote(trackName, note, startTime, duration) {
@@ -147,7 +147,7 @@ class WebAudioAPI {
    }
 
    start() {
-      this.volumeControl.gain.setTargetAtTime(this.globalVolume, this.audioContext.currentTime, 0.01);
+      this.volumeControl.gain.setValueAtTime(this.globalVolume, this.audioContext.currentTime);
       this.audioContext.resume();
    }
  
@@ -158,6 +158,5 @@ class WebAudioAPI {
 }
 
 window.Note = Note;
-window.Effect = Effect;
 window.Duration = Duration;
 window.WebAudioAPI = WebAudioAPI;

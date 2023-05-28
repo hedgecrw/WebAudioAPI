@@ -1,3 +1,5 @@
+import { Instrument } from './Instrument.js';
+
 export function createTrack(audioAPI, name, trackAudioSink) {
 
    // Track-local variable definitions
@@ -31,11 +33,12 @@ export function createTrack(audioAPI, name, trackAudioSink) {
    }
 
    function instrumentName() {
-      return (instrument == null) ? 'None' : instrument.name;
+      return instrument?.name;
    }
 
-   function changeInstrument(newInstrument) {
-      instrument = newInstrument;
+   async function changeInstrument(instrumentName, instrumentUrl) {
+      if (instrument?.name != instrumentName)
+         instrument = await Instrument.loadInstrument(audioAPI.audioContext, instrumentName, instrumentUrl)
    }
 
    function updateVolume(percent, updateTime) {

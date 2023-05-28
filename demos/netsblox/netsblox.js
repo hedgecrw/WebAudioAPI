@@ -77,12 +77,10 @@ class InstrumentBlock {
       return this.instrumentElement.value;
    }
    async loadBlock(api, trackName) {
-      const instrument = await window.audioAPI.retrieveInstrument(this.instrumentName());
-      api.changeInstrument(trackName, instrument);
+      await api.changeInstrument(trackName, this.instrumentName());
    }
    async runBlock(api, trackName, executionStartTime) {
-      if (api.currentInstrumentName(trackName) != this.instrumentName())
-         window.audioAPI.retrieveInstrument(this.instrumentName()).then(instrument => api.changeInstrument(trackName, instrument));
+      api.changeInstrument(trackName, this.instrumentName());
       return executionStartTime;
    }
 }

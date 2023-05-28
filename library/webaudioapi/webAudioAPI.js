@@ -1,6 +1,5 @@
 import { Duration, Note } from './scripts/Constants.js';
 import { createTrack as createTrackImpl } from './scripts/Track.js';
-import { Instrument } from './scripts/Instrument.js';
 import { Effect } from './scripts/Effect.js';
 
 class WebAudioAPI {
@@ -62,13 +61,8 @@ class WebAudioAPI {
       });
    }
 
-   async retrieveInstrument(instrumentName) {
-      return (instrumentName in this.#instrumentListing) ?
-         await Instrument.loadInstrument(this.audioContext, instrumentName, this.#instrumentListing[instrumentName]) :
-         null;
-   }
-
    async retrieveEffect(effectName) {
+      // TODO: Get rid of this and replace with something else
       return (effectName in this.#effectListing) ?
          await Effect.loadEffect(this.audioContext, effectName, this.#effectListing[effectName]) :
          null;
@@ -101,9 +95,9 @@ class WebAudioAPI {
       return (trackName in this.#tracks) ? this.#tracks[trackName].instrumentName() : 'None';
    }
 
-   changeInstrument(trackName, instrument) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].changeInstrument(instrument);
+   async changeInstrument(trackName, instrumentName) {
+      if (trackName in this.#tracks && instrumentName in this.#instrumentListing)
+         await this.#tracks[trackName].changeInstrument(instrumentName, this.#instrumentListing[instrumentName]);
    }
 
    updateTempo(beatBase, beatsPerMinute, timeSignatureNumerator, timeSignatureDenominator) {

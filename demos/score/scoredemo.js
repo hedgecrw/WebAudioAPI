@@ -92,8 +92,7 @@ window.changeInstrument = async function() {
    if (instrumentSelector.selectedIndex > 0) {
       document.getElementById('status').textContent = 'Loading...';
       window.audioAPI.start();
-      window.instrument = await window.audioAPI.retrieveInstrument(instrumentSelection);
-      window.audioAPI.changeInstrument('defaultTrack', window.instrument);
+      await window.audioAPI.changeInstrument('defaultTrack', instrumentSelection);
       document.getElementById('controls').classList.remove('disabled');
       document.getElementById('score').classList.remove('disabled');
       document.getElementById('status').textContent = 'Ready';
@@ -151,10 +150,11 @@ window.resume = function() {
 }
 
 window.stop = function() {
+   const instrumentSelector = document.getElementById('instrument');
    window.audioAPI.stop();
    window.audioAPI.deleteTrack('defaultTrack');
    window.audioAPI.createTrack('defaultTrack');
-   window.audioAPI.changeInstrument('defaultTrack', window.instrument);
+   window.audioAPI.changeInstrument('defaultTrack', instrumentSelector.options[instrumentSelector.selectedIndex].value);
    window.dispatchEvent(new Event('trackdone'));
 }
 

@@ -66,8 +66,7 @@ async function changeInstrument() {
    if (instrumentSelector.selectedIndex > 0) {
       document.getElementById("status").textContent = 'Loading...';
       window.audioAPI.start();
-      const instrument = await window.audioAPI.retrieveInstrument(instrumentSelection);
-      window.audioAPI.changeInstrument('defaultTrack', instrument);
+      await window.audioAPI.changeInstrument('defaultTrack', instrumentSelection);
       document.getElementById("piano").classList.remove("disabled");
       document.getElementById("status").textContent = 'Ready';
       console.log('Instrument loading complete!');

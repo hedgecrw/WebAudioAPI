@@ -1,4 +1,4 @@
-import { Note } from './Constants.js'
+import { Note } from './Constants.js';
 import { decompressSync } from './Fflate.js';
 
 function loadNumberFromArray(array, numBytes, offset) {

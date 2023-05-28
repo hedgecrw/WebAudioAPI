@@ -1,4 +1,4 @@
-import { Note } from './Constants.js'
+import { Note } from './Constants.js';
 import { gzipSync } from './Fflate.js';
 
 function storeNumberInArray(array, number, numBytes, offset) {

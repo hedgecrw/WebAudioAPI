@@ -60,13 +60,6 @@ class WebAudioAPI {
       });
    }
 
-   async retrieveEffect(effectName) {
-      // TODO: Get rid of this and replace with something else
-      return (effectName in this.#effectListing) ?
-         await Effect.loadEffect(this.audioContext, effectName, this.#effectListing[effectName]) :
-         null;
-   }
-
    createTrack(trackName) {
       if (trackName in this.#tracks)
          this.#tracks[trackName].deleteTrack();
@@ -106,23 +99,19 @@ class WebAudioAPI {
    }
 
    updateVolume(trackName, percent, updateTime) {
-      if (trackName) {
-         if (trackName in this.#tracks)
-            this.#tracks[trackName].updateVolume(percent, updateTime);
-      }
-      else {
+      if (trackName == null) {
          this.globalVolume = percent;
          this.volumeControl.gain.setValueAtTime(this.globalVolume, updateTime == null ? this.audioContext.currentTime : updateTime);
       }
+      else if (trackName in this.#tracks)
+         this.#tracks[trackName].updateVolume(percent, updateTime);
    }
 
    updatePanning(trackName, percent, updateTime) {
-      if (trackName) {
-         if (trackName in this.#tracks)
-            this.#tracks[trackName].updatePanning(percent, updateTime);
-      }
-      else
+      if (trackName == null)
          this.panningControl.pan.setValueAtTime((2 * percent) - 1, updateTime == null ? this.audioContext.currentTime : updateTime);
+      else if (trackName in this.#tracks)
+         this.#tracks[trackName].updatePanning(percent, updateTime);
    }
 
    async playNote(trackName, note, startTime, duration) {

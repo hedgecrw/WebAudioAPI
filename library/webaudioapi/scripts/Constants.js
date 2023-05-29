@@ -63,3 +63,5 @@ export const Duration = {
   'ThirtySecond': 32.0, 'DottedThirtySecond': 64.0 / 3.0, 'DottedDottedThirtySecond': 128.0 / 7.0,
    'SixtyFourth': 64.0, 'DottedSixtyFourth': 128.0 / 3.0,  'DottedDottedSixtyFourth': 256.0 / 7.0
 };
+
+export const EffectType = { Volume: 1, Panning: 2, Reverb: 3 };

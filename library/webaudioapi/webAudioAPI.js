@@ -1,4 +1,4 @@
-import { Duration, Note } from './scripts/Constants.js';
+import { Duration, Note, EffectType } from './scripts/Constants.js';
 import { createTrack as createTrackImpl } from './scripts/Track.js';
 
 class WebAudioAPI {
@@ -114,6 +114,13 @@ class WebAudioAPI {
          this.#tracks[trackName].updatePanning(percent, updateTime);
    }
 
+   updateEffect(trackName, effectType, effectOptions, percent, updateTime) {
+      // TODO: Implement (add if non-existent, else update, if no trackName, then master, effectType = reverb, effectOptions = impulse url)
+      // effectOptions = null just updates percent
+      // percent = null emoves effect
+      console.log(trackName, effectType, effectOptions, percent, updateTime);
+   }
+
    async playNote(trackName, note, startTime, duration) {
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playNote(note, startTime, duration) : 0;
    }
@@ -148,4 +155,5 @@ class WebAudioAPI {
 
 window.Note = Note;
 window.Duration = Duration;
+window.EffectType = EffectType;
 window.WebAudioAPI = WebAudioAPI;

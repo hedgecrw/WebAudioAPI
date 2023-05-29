@@ -15,7 +15,7 @@ const drum_clips = {
 };
 
 const effects = {
-   'Volume': 'vol', 'Panning': 'pan', 'Reverb': 'rev'
+   'Volume': EffectType.Volume, 'Panning': EffectType.Panning, 'Reverb': EffectType.Reverb
 };
 
 function addDurationOptions(durationElement) {
@@ -224,16 +224,16 @@ window.onload = () => {
    document.getElementById('drums_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Drums'); });
    document.getElementById('master_volume').addEventListener('input', (e) => { window.audioAPI.updateVolume(null, 0.01 * e.target.value); });
    document.getElementById('master_panning').addEventListener('input', (e) => { window.audioAPI.updatePanning(null, 0.01 * e.target.value); });
-   document.getElementById('master_reverb').addEventListener('input', (e) => { window.audioAPI.updateReverb(null, 0.01 * e.target.value); });
+   document.getElementById('master_reverb').addEventListener('input', (e) => { window.audioAPI.updateEffect(null, EffectType.Reverb, null, 0.01 * e.target.value); });
    document.getElementById('piano_volume').addEventListener('input', (e) => { window.audioAPI.updateVolume('Piano', 0.01 * e.target.value); });
    document.getElementById('piano_panning').addEventListener('input', (e) => { window.audioAPI.updatePanning('Piano', 0.01 * e.target.value); });
-   document.getElementById('piano_reverb').addEventListener('input', (e) => { window.audioAPI.updateReverb('Piano', 0.01 * e.target.value); });
+   document.getElementById('piano_reverb').addEventListener('input', (e) => { window.audioAPI.updateEffect('Piano', EffectType.Reverb, null, 0.01 * e.target.value); });
    document.getElementById('guitar_volume').addEventListener('input', (e) => { window.audioAPI.updateVolume('Guitar', 0.01 * e.target.value); });
    document.getElementById('guitar_panning').addEventListener('input', (e) => { window.audioAPI.updatePanning('Guitar', 0.01 * e.target.value); });
-   document.getElementById('guitar_reverb').addEventListener('input', (e) => { window.audioAPI.updateReverb('Guitar', 0.01 * e.target.value); });
+   document.getElementById('guitar_reverb').addEventListener('input', (e) => { window.audioAPI.updateEffect('Guitar', EffectType.Reverb, null, 0.01 * e.target.value); });
    document.getElementById('drums_volume').addEventListener('input', (e) => { window.audioAPI.updateVolume('Drums', 0.01 * e.target.value); });
    document.getElementById('drums_panning').addEventListener('input', (e) => { window.audioAPI.updatePanning('Drums', 0.01 * e.target.value); });
-   document.getElementById('drums_reverb').addEventListener('input', (e) => { window.audioAPI.updateReverb('Drums', 0.01 * e.target.value); });
+   document.getElementById('drums_reverb').addEventListener('input', (e) => { window.audioAPI.updateEffect('Drums', EffectType.Reverb, null, 0.01 * e.target.value); });
    timeSigNumerator.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });
    timeSigDenominator.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });
    bpmBase.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });

@@ -59,11 +59,11 @@ class EffectBlock {
    async loadBlock(api, trackName) {}
    async runBlock(api, trackName, executionStartTime) {
       const effectType = this.effectType();
-      if (effectType == 'vol')
+      if (effectType == EffectType.Volume)
          api.updateVolume(trackName, 0.01 * this.effectValue(), executionStartTime);
-      else if (effectType == 'rev')
-         api.updateReverb(trackName, 0.01 * this.effectValue(), executionStartTime);
-      else if (effectType == 'pan')
+      else if (effectType == EffectType.Reverb)
+         api.updateEffect(trackName, EffectType.Reverb, this.effectType(), 0.01 * this.effectValue(), executionStartTime);
+      else if (effectType == EffectType.Panning)
          api.updatePanning(trackName, 0.01 * this.effectValue(), executionStartTime);
       return executionStartTime;
    }

@@ -1,0 +1,32 @@
+{
+   "plugins": ["plugins/markdown"],
+   "recurseDepth": 10,
+   "source": {
+      "includePattern": ".+\\.(js(doc|x)?|mjs)$",
+      "excludePattern": "(^|\\/|\\\\)_"
+   },
+   "sourceType": "module",
+   "tags": {
+      "allowUnknownTags": false,
+      "dictionaries": ["jsdoc","closure"]
+   },
+   "templates": {
+      "cleverLinks": true,
+      "monospaceLinks": false,
+      "default": {
+         "includeDate": false,
+         "outputSourceFiles": true,
+         "staticFiles": {
+            "include": [
+               "./docs/static"
+            ]
+         }
+      },
+      "name": "WebAudioAPI"
+   },
+   "opts": {
+      "template": "docs/templates/tui-jsdoc-template",
+      "encoding": "utf8",
+      "recurse": true
+   }
+}

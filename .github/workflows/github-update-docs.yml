@@ -19,13 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: mkdir docs/js && cp -rf library/webaudioapi docs/js/ && cp -rf assets/{effects,instruments} docs/js/
-      - run: cp -f demos/netsblox/*.js docs/js/ && cp -f demos/piano/*.js docs/js/ && cp -f demos/score/*.js docs/js/ && cp -f tools/instrument/*.js docs/js/
-      - run: find demos/netsblox/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/netsbloxdemo.html
-      - run: find demos/piano/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/pianodemo.html
-      - run: find demos/score/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/scoredemo.html
-      - run: find tools/instrument/* ! -name '*.js' -maxdepth 0 -exec cp -rf "{}" docs/ \; && mv docs/index.html docs/instrument-creator.html
-      - run: tar --directory docs/ -hcf artifact.tar .
+      - run: npm install && make demos && make assets && make docs
+      - run: mv build/lib build/demos/ && mv -f build/docs/* build/demos/
+      - run: tar --directory build/demos/ -hcf artifact.tar .
       - uses: actions/upload-artifact@v3
         with:
           name: github-pages

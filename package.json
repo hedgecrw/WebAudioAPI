@@ -1,0 +1,34 @@
+{
+   "name": "webaudioapi",
+   "version": "0.1.0",
+   "description": "Javascript library to generate music using the Web Audio API",
+   "author": "Will Hedgecock <ronald.w.hedgecock@vanderbilt.edu>",
+   "repository": {
+      "type": "git",
+      "url": "https://github.com/hedgecrw/WebAudioAPI.git"
+   },
+   "homepage": "https://github.com/hedgecrw/WebAudioAPI",
+   "bugs": "https://github.com/hedgecrw/WebAudioAPI/issues",
+   "license": "MIT",
+   "browser": "webAudioAPI.js",
+   "directories": {
+      "lib": "library/webaudioapi",
+      "doc": "docs"
+   },
+   "private": true,
+   "devDependencies": {
+      "@rollup/plugin-eslint": "^9.0.4",
+      "@rollup/plugin-json": "^6.0.0",
+      "@rollup/plugin-terser": "^0.4.3",
+      "jsdoc": "^4.0.2",
+      "rollup": "^3.25.1",
+      "taffydb": "^2.7.3",
+      "tui-jsdoc-template": "^1.2.2"
+   },
+   "scripts": {
+      "build": "rollup -c"
+   },
+   "dependencies": {
+      "fflate": "^0.8.0"
+   }
+}

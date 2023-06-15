@@ -112,3 +112,6 @@ dist
 
 # Raw SoundFont/audio files
 rawAudioData/
+
+# Build data
+build/

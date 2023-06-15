@@ -1,22 +1,15 @@
-import { Duration, Note } from './webaudioapi/scripts/Constants.js';
-
-const durations = {
-   'Whole Note': Duration.Whole,  'Dotted Whole Note': Duration.DottedWhole, 'Double Dotted Whole Note': Duration.DottedDottedWhole,
-   'Half Note': Duration.Half, 'Dotted Half Note': Duration.DottedHalf, 'Double Dotted Half Note': Duration.DottedDottedHalf,
-   'Quarter Note': Duration.Quarter, 'Dotted Quarter Note': Duration.DottedQuarter, 'Double Dotted Quarter Note': Duration.DottedDottedQuarter,
-   '8th Note': Duration.Eighth, 'Dotted 8th Note': Duration.DottedEighth, 'Double Dotted 8th Note': Duration.DottedDottedEighth,
-   '16th Note': Duration.Sixteenth, 'Dotted 16th Note': Duration.DottedSixteenth, 'Double Dotted 16th Note': Duration.DottedDottedSixteenth };
-
 function addDurationOptions(durationElement) {
-   for (let duration in durations)
-      durationElement.add(new Option(duration, durations[duration]));
+   const durations = window.audioAPI.getAvailableNoteDurations();
+   for (const duration in durations)
+      durationElement.add(new Option((duration + 'Note').match(/[A-Z][a-z]+/g).join(' '), durations[duration]));
 }
 
 function addNoteOptions(noteElement) {
+   const notes = window.audioAPI.getAvailableNotes();
    noteElement.add(new Option('None', 0));
-   for (let note in Note) {
+   for (const note in notes) {
       let text = note.slice(0, 2) + ((note[2] == 's') ? '♯' : (note[2] == 'b') ? '♭' : '') + ((note[3] == 's') ? '♯' : (note[3] == 'b') ? '♭' : '');
-      noteElement.add(new Option(text, Note[note]));
+      noteElement.add(new Option(text, notes[note]));
    }
 }
 
@@ -35,7 +28,7 @@ function addChord(_event, duration, chord) {
    chordElement.appendChild(durationLabel);
    chordElement.appendChild(durationSelection);
    if (duration)
-      durationSelection.selectedIndex = Object.keys(durations).indexOf(duration);
+      durationSelection.value = duration;
    for (let i = 1; i <= 3; ++i) {
       const noteLabel = document.createElement('label');
       noteLabel.htmlFor = 'note' + chordIndex.toString() + '_' + i.toString();
@@ -59,31 +52,32 @@ function addChord(_event, duration, chord) {
 
 function loadHappyBirthday() {
    window.chordIndex = 0;
-   addChord(null, 'Half Note', ['D4']);
-   addChord(null, 'Quarter Note', ['D4']);
-   addChord(null, 'Dotted Half Note', ['E4', 'G2']);
-   addChord(null, 'Dotted Half Note', ['D4', 'B3', 'D3']);
-   addChord(null, 'Dotted Half Note', ['G4', 'B3', 'D3']);
-   addChord(null, 'Dotted Whole Note', ['F4♯', 'D3']);
-   addChord(null, 'Half Note', ['D4', 'A2']);
-   addChord(null, 'Quarter Note', ['D4']);
-   addChord(null, 'Dotted Half Note', ['E4', 'D2']);
-   addChord(null, 'Dotted Half Note', ['D4', 'A3', 'F3♯']);
-   addChord(null, 'Dotted Half Note', ['A4', 'A3', 'F3♯']);
-   addChord(null, 'Dotted Whole Note', ['G4', 'G2']);
-   addChord(null, 'Half Note', ['D4']);
-   addChord(null, 'Quarter Note', ['D4']);
-   addChord(null, 'Dotted Half Note', ['D5', 'G2']);
-   addChord(null, 'Dotted Half Note', ['B4', 'B3', 'D3']);
-   addChord(null, 'Dotted Half Note', ['G4', 'B3', 'D3']);
-   addChord(null, 'Dotted Half Note', ['F4♯', 'C3']);
-   addChord(null, 'Dotted Whole Note', ['E4', 'C4']);
-   addChord(null, 'Half Note', ['C5']);
-   addChord(null, 'Quarter Note', ['C5']);
-   addChord(null, 'Dotted Half Note', ['B4', 'D3']);
-   addChord(null, 'Dotted Half Note', ['G4', 'A3', 'F4♯']);
-   addChord(null, 'Dotted Half Note', ['A4', 'A3', 'F4♯']);
-   addChord(null, 'Dotted Whole Note', ['G4', 'G3', 'G2']);
+   const durations = window.audioAPI.getAvailableNoteDurations();
+   addChord(null, durations.Half, ['D4']);
+   addChord(null, durations.Quarter, ['D4']);
+   addChord(null, durations.DottedHalf, ['E4', 'G2']);
+   addChord(null, durations.DottedHalf, ['D4', 'B3', 'D3']);
+   addChord(null, durations.DottedHalf, ['G4', 'B3', 'D3']);
+   addChord(null, durations.DottedWhole, ['F4♯', 'D3']);
+   addChord(null, durations.Half, ['D4', 'A2']);
+   addChord(null, durations.Quarter, ['D4']);
+   addChord(null, durations.DottedHalf, ['E4', 'D2']);
+   addChord(null, durations.DottedHalf, ['D4', 'A3', 'F3♯']);
+   addChord(null, durations.DottedHalf, ['A4', 'A3', 'F3♯']);
+   addChord(null, durations.DottedWhole, ['G4', 'G2']);
+   addChord(null, durations.Half, ['D4']);
+   addChord(null, durations.Quarter, ['D4']);
+   addChord(null, durations.DottedHalf, ['D5', 'G2']);
+   addChord(null, durations.DottedHalf, ['B4', 'B3', 'D3']);
+   addChord(null, durations.DottedHalf, ['G4', 'B3', 'D3']);
+   addChord(null, durations.DottedHalf, ['F4♯', 'C3']);
+   addChord(null, durations.DottedWhole, ['E4', 'C4']);
+   addChord(null, durations.Half, ['C5']);
+   addChord(null, durations.Quarter, ['C5']);
+   addChord(null, durations.DottedHalf, ['B4', 'D3']);
+   addChord(null, durations.DottedHalf, ['G4', 'A3', 'F4♯']);
+   addChord(null, durations.DottedHalf, ['A4', 'A3', 'F4♯']);
+   addChord(null, durations.DottedWhole, ['G4', 'G3', 'G2']);
 }
 
 window.changeInstrument = async function() {
@@ -91,8 +85,7 @@ window.changeInstrument = async function() {
    const instrumentSelection = instrumentSelector.options[instrumentSelector.selectedIndex].value;
    if (instrumentSelector.selectedIndex > 0) {
       document.getElementById('status').textContent = 'Loading...';
-      window.audioAPI.start();
-      await window.audioAPI.changeInstrument('defaultTrack', instrumentSelection);
+      await window.audioAPI.updateInstrument('defaultTrack', instrumentSelection);
       document.getElementById('controls').classList.remove('disabled');
       document.getElementById('score').classList.remove('disabled');
       document.getElementById('status').textContent = 'Ready';
@@ -109,6 +102,8 @@ window.clearScore = function() {
 }
 
 window.playScore = async function() {
+   window.playing = true;
+   await window.audioAPI.start();
    document.getElementById('clearButton').classList.add('disabled');
    document.getElementById('playButton').classList.add('disabled');
    document.getElementById('pauseButton').classList.remove('disabled');
@@ -117,9 +112,8 @@ window.playScore = async function() {
    const timeSigDenominator = document.getElementById('timeSigDenominator').value;
    const bpmBase = document.getElementById('bpmBase').value;
    const bpm = parseInt(document.getElementById('bpm').value);
-   window.audioAPI.start();
    window.audioAPI.updateTempo(bpmBase, bpm, timeSigNumerator, timeSigDenominator);
-   let executionStartTime = window.audioAPI.currentTime;
+   let executionStartTime = window.audioAPI.getCurrentTime();
    for (const chord of document.getElementsByClassName('chord')) {
       let durationSeconds = 0.0;
       const durationList = [], noteList = [];
@@ -132,7 +126,7 @@ window.playScore = async function() {
          durationSeconds = await window.audioAPI.playNote('defaultTrack', noteList[i], executionStartTime, durationList[i]);
       executionStartTime += durationSeconds;
    }
-   while (window.audioAPI.currentTime < executionStartTime)
+   while (window.playing && window.audioAPI.getCurrentTime() < executionStartTime)
       await new Promise(res => setTimeout(res, 10));
    window.dispatchEvent(new Event('trackdone'));
 }
@@ -143,19 +137,17 @@ window.pause = function() {
    document.getElementById('resumeButton').classList.remove('disabled');
 }
 
-window.resume = function() {
+window.resume = async function() {
    document.getElementById('pauseButton').classList.remove('disabled');
    document.getElementById('resumeButton').classList.add('disabled');
-   window.audioAPI.start();
+   await window.audioAPI.start();
 }
 
-window.stop = function() {
-   const instrumentSelector = document.getElementById('instrument');
-   window.audioAPI.stop();
-   window.audioAPI.deleteTrack('defaultTrack');
+window.stop = async function() {
+   window.playing = false;
    window.audioAPI.createTrack('defaultTrack');
-   window.audioAPI.changeInstrument('defaultTrack', instrumentSelector.options[instrumentSelector.selectedIndex].value);
-   window.dispatchEvent(new Event('trackdone'));
+   const instrumentSelector = document.getElementById('instrument');
+   await window.audioAPI.updateInstrument('defaultTrack', instrumentSelector.options[instrumentSelector.selectedIndex].value);
 }
 
 window.onload = () => {
@@ -168,13 +160,12 @@ window.onload = () => {
    const instrumentSelector = document.getElementById('instrument');
    instrumentSelector.add(new Option('Choose an instrument'));
    window.addEventListener('trackdone', () => {
+      window.audioAPI.stop();
       document.getElementById('clearButton').classList.remove('disabled');
       document.getElementById('playButton').classList.remove('disabled');
       document.getElementById('pauseButton').classList.add('disabled');
       document.getElementById('resumeButton').classList.add('disabled');
       document.getElementById('stopButton').classList.add('disabled');
    });
-   window.audioAPI.loadInstrumentAssets('js/instruments').then(() => {
-      window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
-   });
+   window.audioAPI.getAvailableInstruments('../instruments').then(instruments => instruments.forEach(instrument => instrumentSelector.add(new Option(instrument))));
 };

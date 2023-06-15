@@ -1,30 +1,30 @@
-async function playC4() { window.c4 = await window.audioAPI.startNote('defaultTrack', Note.C4); }
-async function playDb4() { window.d4b = await window.audioAPI.startNote('defaultTrack', Note.D4b); }
-async function playD4() { window.d4 = await window.audioAPI.startNote('defaultTrack', Note.D4); }
-async function playEb4() { window.e4b = await window.audioAPI.startNote('defaultTrack', Note.E4b); }
-async function playE4() { window.e4 = await window.audioAPI.startNote('defaultTrack', Note.E4); }
-async function playF4() { window.f4 = await window.audioAPI.startNote('defaultTrack', Note.F4); }
-async function playGb4() { window.g4b = await window.audioAPI.startNote('defaultTrack', Note.G4b); }
-async function playG4() { window.g4 = await window.audioAPI.startNote('defaultTrack', Note.G4); }
-async function playAb4() { window.a4b = await window.audioAPI.startNote('defaultTrack', Note.A4b); }
-async function playA4() { window.a4 = await window.audioAPI.startNote('defaultTrack', Note.A4); }
-async function playBb4() { window.b4b = await window.audioAPI.startNote('defaultTrack', Note.B4b); }
-async function playB4() { window.b4 = await window.audioAPI.startNote('defaultTrack', Note.B4); }
-async function playC5() { window.c5 = await window.audioAPI.startNote('defaultTrack', Note.C5); }
+async function playC4() { window.c4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.C4); }
+async function playDb4() { window.d4b = await window.audioAPI.startNote('defaultTrack', window.noteValues.D4b); }
+async function playD4() { window.d4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.D4); }
+async function playEb4() { window.e4b = await window.audioAPI.startNote('defaultTrack', window.noteValues.E4b); }
+async function playE4() { window.e4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.E4); }
+async function playF4() { window.f4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.F4); }
+async function playGb4() { window.g4b = await window.audioAPI.startNote('defaultTrack', window.noteValues.G4b); }
+async function playG4() { window.g4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.G4); }
+async function playAb4() { window.a4b = await window.audioAPI.startNote('defaultTrack', window.noteValues.A4b); }
+async function playA4() { window.a4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.A4); }
+async function playBb4() { window.b4b = await window.audioAPI.startNote('defaultTrack', window.noteValues.B4b); }
+async function playB4() { window.b4 = await window.audioAPI.startNote('defaultTrack', window.noteValues.B4); }
+async function playC5() { window.c5 = await window.audioAPI.startNote('defaultTrack', window.noteValues.C5); }
 
-function releaseC4() { window.audioAPI.stopNote('defaultTrack', window.c4); delete window.c4; }
-function releaseDb4() { window.audioAPI.stopNote('defaultTrack', window.d4b); delete window.d4b; }
-function releaseD4() { window.audioAPI.stopNote('defaultTrack', window.d4); delete window.d4; }
-function releaseEb4() { window.audioAPI.stopNote('defaultTrack', window.e4b); delete window.e4b; }
-function releaseE4() { window.audioAPI.stopNote('defaultTrack', window.e4); delete window.e4; }
-function releaseF4() { window.audioAPI.stopNote('defaultTrack', window.f4); delete window.f4; }
-function releaseGb4() { window.audioAPI.stopNote('defaultTrack', window.g4b); delete window.g4b; }
-function releaseG4() { window.audioAPI.stopNote('defaultTrack', window.g4); delete window.g4; }
-function releaseAb4() { window.audioAPI.stopNote('defaultTrack', window.a4b); delete window.a4b; }
-function releaseA4() { window.audioAPI.stopNote('defaultTrack', window.a4); delete window.a4; }
-function releaseBb4() { window.audioAPI.stopNote('defaultTrack', window.b4b); delete window.b4b; }
-function releaseB4() { window.audioAPI.stopNote('defaultTrack', window.b4); delete window.b4; }
-function releaseC5() { window.audioAPI.stopNote('defaultTrack', window.c5); delete window.c5; }
+function releaseC4() { if (window.c4) { window.audioAPI.stopNote('defaultTrack', window.c4); delete window.c4; } }
+function releaseDb4() { if (window.d4b) { window.audioAPI.stopNote('defaultTrack', window.d4b); delete window.d4b; } }
+function releaseD4() { if (window.d4) { window.audioAPI.stopNote('defaultTrack', window.d4); delete window.d4; } }
+function releaseEb4() { if (window.e4b) { window.audioAPI.stopNote('defaultTrack', window.e4b); delete window.e4b; } }
+function releaseE4() { if (window.e4) { window.audioAPI.stopNote('defaultTrack', window.e4); delete window.e4; } }
+function releaseF4() { if (window.f4) { window.audioAPI.stopNote('defaultTrack', window.f4); delete window.f4; } }
+function releaseGb4() { if (window.g4b) { window.audioAPI.stopNote('defaultTrack', window.g4b); delete window.g4b; } }
+function releaseG4() { if (window.g4) { window.audioAPI.stopNote('defaultTrack', window.g4); delete window.g4; } }
+function releaseAb4() { if (window.a4b) { window.audioAPI.stopNote('defaultTrack', window.a4b); delete window.a4b; } }
+function releaseA4() { if (window.a4) { window.audioAPI.stopNote('defaultTrack', window.a4); delete window.a4; } }
+function releaseBb4() { if (window.b4b) { window.audioAPI.stopNote('defaultTrack', window.b4b); delete window.b4b; } }
+function releaseB4() { if (window.b4) { window.audioAPI.stopNote('defaultTrack', window.b4); delete window.b4; } }
+function releaseC5() { if (window.c5) { window.audioAPI.stopNote('defaultTrack', window.c5); delete window.c5; } }
 
 async function pressNote(event) {
    if (!event.repeat) {
@@ -66,7 +66,7 @@ async function changeInstrument() {
    if (instrumentSelector.selectedIndex > 0) {
       document.getElementById("status").textContent = 'Loading...';
       window.audioAPI.start();
-      await window.audioAPI.changeInstrument('defaultTrack', instrumentSelection);
+      await window.audioAPI.updateInstrument('defaultTrack', instrumentSelection);
       document.getElementById("piano").classList.remove("disabled");
       document.getElementById("status").textContent = 'Ready';
       console.log('Instrument loading complete!');
@@ -79,9 +79,8 @@ window.addEventListener('keyup', releaseNote);
 window.onload = () => {
    window.audioAPI = new WebAudioAPI();
    window.audioAPI.createTrack('defaultTrack');
+   window.noteValues = window.audioAPI.getAvailableNotes();
    const instrumentSelector = document.getElementById('instrument');
    instrumentSelector.add(new Option('Choose an instrument'));
-   window.audioAPI.loadInstrumentAssets('js/instruments').then(() => {
-      window.audioAPI.availableInstruments.forEach(instrument => instrumentSelector.add(new Option(instrument)));
-   });
+   window.audioAPI.getAvailableInstruments('../instruments').then(instruments => instruments.forEach(instrument => instrumentSelector.add(new Option(instrument))));
 };

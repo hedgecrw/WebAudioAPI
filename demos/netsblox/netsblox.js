@@ -59,12 +59,10 @@ class EffectBlock {
    async loadBlock(api, trackName) {}
    async runBlock(api, trackName, executionStartTime) {
       const effectType = this.effectType();
-      if (effectType == EffectType.Volume)
-         api.updateVolume(trackName, 0.01 * this.effectValue(), executionStartTime);
-      else if (effectType == EffectType.Reverb)
-         api.updateEffect(trackName, EffectType.Reverb, this.effectType(), 0.01 * this.effectValue(), executionStartTime);
-      else if (effectType == EffectType.Panning)
-         api.updatePanning(trackName, 0.01 * this.effectValue(), executionStartTime);
+      if (effectType == 'Volume')
+         api.updateTrackVolume(trackName, 0.01 * this.effectValue(), executionStartTime);
+      else
+         api.updateTrackEffect(trackName, this.effectType(), null, 0.01 * this.effectValue(), executionStartTime);
       return executionStartTime;
    }
 }
@@ -77,10 +75,10 @@ class InstrumentBlock {
       return this.instrumentElement.value;
    }
    async loadBlock(api, trackName) {
-      await api.changeInstrument(trackName, this.instrumentName());
+      await api.updateInstrument(trackName, this.instrumentName());
    }
    async runBlock(api, trackName, executionStartTime) {
-      api.changeInstrument(trackName, this.instrumentName());
+      api.updateInstrument(trackName, this.instrumentName());
       return executionStartTime;
    }
 }
@@ -89,7 +87,8 @@ class NetsBloxAudioScript {
    constructor(scriptID, scriptElements, audioAPI) {
 
       // Initialize the script-local variables
-      this.trackName = audioAPI.createTrack(scriptID).name;
+      audioAPI.createTrack(scriptID);
+      this.trackName = scriptID;
       this.audioAPI = audioAPI;
       this.scriptID = scriptID;
       this.scriptElements = [];
@@ -141,7 +140,7 @@ class NetsBloxAudioScript {
 
    stop() {
       this.isRunning = false;
-      this.audioAPI.deleteTrack(this.trackName);
+      this.audioAPI.removeTrack(this.trackName);
    }
 
    async load() {
@@ -151,12 +150,12 @@ class NetsBloxAudioScript {
 
    async * start() {
       this.isRunning = true;
-      let executionStartTime = this.audioAPI.currentTime;
+      let executionStartTime = this.audioAPI.getCurrentTime();
       while (this.isRunning) {
          for (const scriptElement of this.scriptElements)
             if (this.isRunning) {
                executionStartTime = await scriptElement.runBlock(this.audioAPI, this.trackName, executionStartTime);
-               while (this.audioAPI.currentTime + 0.1 < executionStartTime)
+               while (this.audioAPI.getCurrentTime() + 0.1 < executionStartTime)
                   yield;
             }
          this.isRunning = this.isRunning && this.loopBlock && this.loopBlock.loopEnabled();
@@ -197,7 +196,7 @@ class NetsBloxEmulator {
       const scripts = [];
       for (const script in this.scripts)
          scripts.push(this.scripts[script].start())
-      this.audioAPI.start();
+      await this.audioAPI.start();
       while (this.isRunning && scripts.length) {
          for (let i = scripts.length - 1; i >= 0; --i)
             if (this.isRunning && (await scripts[i].next())['done'])
@@ -207,8 +206,8 @@ class NetsBloxEmulator {
       window.dispatchEvent(new Event('audiodone'));
    }
 
-   resume() {
-      this.audioAPI.start();
+   async resume() {
+      await this.audioAPI.start();
    }
 
    pause() {
@@ -217,7 +216,7 @@ class NetsBloxEmulator {
 
    stop() {
       this.isRunning = false;
-      this.audioAPI.deleteAllTracks();
+      this.audioAPI.removeAllTracks();
    }
 }
 

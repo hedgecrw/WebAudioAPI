@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <title>Audio Generator Live Piano Demo</title>
     <link rel="stylesheet" href="pianodemo.css">
-    <script type="module" src="js/webaudioapi/webAudioAPI.js"></script>
+    <script type="module" src="js/webAudioAPI.js"></script>
     <script src="js/pianodemo.js"></script>
   </head>
 
@@ -21,19 +21,19 @@
     </div>
 
     <div id="piano" class="piano disabled">
-      <div class="white-key" onmousedown="playC4()" onmouseup="releaseC4()">A</div>
-      <div class="black-key" onmousedown="playDb4()" onmouseup="releaseDb4()">W</div>
-      <div class="white-key" onmousedown="playD4()" onmouseup="releaseD4()">S</div>
-      <div class="black-key" onmousedown="playEb4()" onmouseup="releaseEb4()">E</div>
-      <div class="white-key" onmousedown="playE4()" onmouseup="releaseE4()">D</div>
-      <div class="white-key" onmousedown="playF4()" onmouseup="releaseF4()">F</div>
-      <div class="black-key" onmousedown="playGb4()" onmouseup="releaseGb4()">T</div>
-      <div class="white-key" onmousedown="playG4()" onmouseup="releaseG4()">G</div>
-      <div class="black-key" onmousedown="playAb4()" onmouseup="releaseAb4()">Y</div>
-      <div class="white-key" onmousedown="playA4()" onmouseup="releaseA4()">H</div>
-      <div class="black-key" onmousedown="playBb4()" onmouseup="releaseBb4()">U</div>
-      <div class="white-key" onmousedown="playB4()" onmouseup="releaseB4()">J</div>
-      <div class="white-key" onmousedown="playC5()" onmouseup="releaseC5()">K</div>
+      <div class="white-key" onmousedown="playC4()" onmouseup="releaseC4()" onmouseout="releaseC4()">A</div>
+      <div class="black-key" onmousedown="playDb4()" onmouseup="releaseDb4()" onmouseout="releaseDb4()">W</div>
+      <div class="white-key" onmousedown="playD4()" onmouseup="releaseD4()" onmouseout="releaseD4()">S</div>
+      <div class="black-key" onmousedown="playEb4()" onmouseup="releaseEb4()" onmouseout="releaseEb4()">E</div>
+      <div class="white-key" onmousedown="playE4()" onmouseup="releaseE4()" onmouseout="releaseE4()">D</div>
+      <div class="white-key" onmousedown="playF4()" onmouseup="releaseF4()" onmouseout="releaseF4()">F</div>
+      <div class="black-key" onmousedown="playGb4()" onmouseup="releaseGb4()" onmouseout="releaseGb4()">T</div>
+      <div class="white-key" onmousedown="playG4()" onmouseup="releaseG4()" onmouseout="releaseG4()">G</div>
+      <div class="black-key" onmousedown="playAb4()" onmouseup="releaseAb4()" onmouseout="releaseAb4()">Y</div>
+      <div class="white-key" onmousedown="playA4()" onmouseup="releaseA4()" onmouseout="releaseA4()">H</div>
+      <div class="black-key" onmousedown="playBb4()" onmouseup="releaseBb4()" onmouseout="releaseBb4()">U</div>
+      <div class="white-key" onmousedown="playB4()" onmouseup="releaseB4()" onmouseout="releaseB4()">J</div>
+      <div class="white-key" onmousedown="playC5()" onmouseup="releaseC5()" onmouseout="releaseC5()">K</div>
     </div>
 
   </body>

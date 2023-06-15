@@ -1,4 +1,10 @@
-import { Note } from './Constants.js';
+/**
+ * Contains all WebAudioAPI instrument-creation functionality.
+ * 
+ * @module InstrumentCreator
+ */
+
+import { Note } from './Constants.mjs';
 import { gzipSync } from './Fflate.js';
 
 function storeNumberInArray(array, number, numBytes, offset) {

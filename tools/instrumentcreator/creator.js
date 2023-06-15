@@ -1,4 +1,4 @@
-import { createInstrument } from './webaudioapi/scripts/InstrumentCreator.js';
+import { createInstrument } from './InstrumentCreator.mjs';
 
 function displayResult(label, message, isError) {
    if (isError)
@@ -32,7 +32,7 @@ window.generateInstrument = async () => {
          displayResult('Download Link:', '<a href="'+url+'" download="'+fileName+'">'+fileName+'</a>', false);
       }
    }
-}
+};
 
 window.onload = () => {
    window.generationErrors = [];

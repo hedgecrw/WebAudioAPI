@@ -34,5 +34,4 @@ TODO: Finish jsdoc documentation
 TODO: Finish Word architecture doc
 TODO: Implement MIDI playing example
 TODO: Implement proper error handling (Errors.js)
-TODO: Add ability to receive callback upon MIDI events received
 TODO: Connect MIDI channels to specific tracks??? Requires global MIDI connecting?

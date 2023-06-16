@@ -136,16 +136,17 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       return await playClip(arrayBuffer, startTime, duration);
    }
 
-   function connectToMidiDevice(midiInput) {
-      midiDevice = midiInput;
-      midiDevice.addEventListener('midimessage', midiEventReceived);
-      return true;
-   }
-
    function disconnectFromMidiDevice() {
       if (midiDevice != null)
          midiDevice.removeEventListener('midimessage', midiEventReceived);
       midiDevice = null;
+   }
+
+   function connectToMidiDevice(midiInput) {
+      disconnectFromMidiDevice();
+      midiInput.addEventListener('midimessage', midiEventReceived);
+      midiDevice = midiInput;
+      return true;
    }
 
    function deleteTrack() {

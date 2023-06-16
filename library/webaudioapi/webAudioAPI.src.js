@@ -12,7 +12,7 @@ export class WebAudioAPI {
 
    // WebAudioAPI private variable definitions
    #audioContext = new AudioContext(); #started = false; #masterVolume = 1.0;
-   #tracks = {}; #effects = {}; #effectListing = {}; #instrumentListing = {}; #loadedInstruments = {};
+   #tracks = {}; #effects = {}; #effectListing = {}; #instrumentListing = {}; #loadedInstruments = {}; #midiCallbacks = {};
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
 
    // Required audio nodes
@@ -347,7 +347,51 @@ export class WebAudioAPI {
    }
 
    /**
+    * Registers a callback function to receive incoming events from the specified MIDI device.
+    * 
+    * The {@link midiEventCallback} parameter should be a callback function that is expected to
+    * receive one parameter of type {@link MIDIMessageEvent}.
+    * 
+    * Note: A callback may be registered for a MIDI device that is also connected to an audio
+    * track; however, only one top-level event callback can be registered with a MIDI device at
+    * a time.
+    * 
+    * @param {string} midiDeviceName - Name of the MIDI device for which to receive events
+    * @param {MIDIMessageEvent} midiEventCallback - Callback to fire when a MIDI event is received
+    * @returns {boolean} Whether the event callback registration was successful
+    */
+   registerMidiDeviceCallback(midiDeviceName, midiEventCallback) {
+      this.deregisterMidiDeviceCallback(midiDeviceName);
+      if (this.#midiDeviceAccess) {
+         for (const midiDevice of this.#midiDeviceAccess.inputs.values())
+            if (midiDeviceName == midiDevice.name) {
+               midiDevice.addEventListener('midimessage', midiEventCallback);
+               this.#midiCallbacks[midiDeviceName] = { device: midiDevice, callback: midiEventCallback };
+               return true;
+            }
+      }
+      return false;
+   }
+
+   /**
+    * Removes a user-registered callback from the specified MIDI device so that it will no
+    * longer fire upon reception of a MIDI event.
+    * 
+    * @param {string} midiDeviceName - Name of the MIDI device for which to stop receiving events
+    */
+   deregisterMidiDeviceCallback(midiDeviceName) {
+      if (midiDeviceName in this.#midiCallbacks) {
+         const midiObject = this.#midiCallbacks[midiDeviceName];
+         midiObject.device.removeEventListener('midimessage', midiObject.callback);
+         delete this.#midiCallbacks[midiDeviceName];
+      }
+   }
+
+   /**
     * Connects a MIDI device to the specified audio track.
+    * 
+    * Note: A single MIDI device can be connected to multiple audio tracks at the same time,
+    * but an audio track can only be connected to a single MIDI device.
     * 
     * @param {string} trackName - Name of the track to which to connect the MIDI device
     * @param {string} midiDeviceName - Name of the MIDI device to connect to the track
@@ -356,7 +400,7 @@ export class WebAudioAPI {
    async connectMidiDeviceToTrack(trackName, midiDeviceName) {
       if (this.#midiDeviceAccess && trackName in this.#tracks) {
          for (const midiDevice of this.#midiDeviceAccess.inputs.values())
-            if (midiDeviceName === midiDevice.name)
+            if (midiDeviceName == midiDevice.name)
                return this.#tracks[trackName].connectToMidiDevice(midiDevice);
       }
       return false;

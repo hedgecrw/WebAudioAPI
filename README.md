@@ -22,16 +22,17 @@ Javascript library to generate music using the Web Audio API
 
 ## Future Work
 
+ - [ ] Implement MIDI playing example with callbacks
+ - [ ] Implement proper error handling (Errors.js)
+ - [ ] Allow instruments to specify their min/max valid notes
+ - [ ] Allow instruments to specify if continuous or decaying
+ - [ ] Add note looping for sustained notes if continuous instrument
+ - [ ] Add general modulation parameter for entire instrument
+ - [ ] Add instrument support for reverb, attack, and decay parameters
+ - [ ] Use Midi.mjs module to make library fully "General MIDI 2" compliant
+ - [ ] Allow for connect MIDI channels to specific tracks
+ - [ ] Implement instrument library asset creator
+ - [ ] Implement full support for Effects
  - [ ] Use Sf3 SoundFont format for instrument storage and loading
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
- - [ ] Add note looping for sustained notes
- - [ ] Add general modulation parameter for entire instrument
- - [ ] Allow instruments to specify their min/max valid notes (also specify if continuous or decaying)
- - [ ] Add support for reverb, attack, and decay parameters
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
-
-TODO: Finish jsdoc documentation
-TODO: Finish Word architecture doc
-TODO: Implement MIDI playing example
-TODO: Implement proper error handling (Errors.js)
-TODO: Connect MIDI channels to specific tracks??? Requires global MIDI connecting?

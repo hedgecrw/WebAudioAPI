@@ -6,7 +6,7 @@
  */
 
 /**
- * Object representing a mapping between the notational name of a music note and its MIDI value.
+ * Object representing a mapping between the notational name of a musical note and its MIDI value.
  * @constant {Object.<string, number>}
  */
 export const Note = {

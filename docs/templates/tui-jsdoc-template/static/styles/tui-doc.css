@@ -165,6 +165,15 @@ ul, ol, li {list-style:none; padding-left:0; margin-left:0;}
 .main section article dl h4 .signature {
     font-size: 9pt;
 }
+.main section article dl h4 .signature .signature-attributes {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+    font-size: 8pt;
+    font-weight: normal;
+    border-radius: 3px;
+    padding: 1px 2px;
+}
 .main section article dl h4 .type-signature {
     font-size: 9pt;
     color: #31708f;

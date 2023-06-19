@@ -1,14 +1,34 @@
 /**
- * Contains all instrument-specific WebAudioAPI functionality.
- * 
+ * Module containing all instrument-specific {@link WebAudioAPI} functionality.
  * @module Instrument
+ */
+
+/**
+ * Object containing all instrument-specific {@link WebAudioAPI} functionality.
+ * @namespace Instrument
+ * @global
  */
 
 import { Frequency, Note } from './Constants.mjs';
 import { decompressSync } from './Fflate.js';
 
+/**
+ * Loads an existing {@link Instrument} object capable of mapping audio data to musical output.
+ * 
+ * If the `url` parameter is set to `null`, a sine-wave oscillator will be used to generate
+ * all audio output.
+ * 
+ * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+ * @param {string} name - Name of the instrument to load
+ * @param {string|null} url - URL pointing to the instrument data to load or `null`
+ * @returns {Instrument} Newly loaded {@link Instrument}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
+ * @see {@link Instrument}
+ * @async
+ */
 export async function loadInstrument(audioContext, name, url) {
 
+   // Private internal Instrument functions
    function loadNumberFromArray(array, numBytes, offset) {
       let number = 0;
       for (let i = numBytes - 1; i >= 0; --i)
@@ -71,18 +91,40 @@ export async function loadInstrument(audioContext, name, url) {
       return noteData;
    }
 
+   // Create an instance of the Instrument object
+   const instrumentInstance = {
+      /**
+       * Name of the {@link Instrument}.
+       * @memberof Instrument
+       * @instance
+       */
+      name,
+
+      /**
+       * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       * that can be used to play back the specified MIDI `note`.
+       * 
+       * @function
+       * @param {number} note - MIDI note number for which to generate a playable note
+       * @memberof Instrument
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       */
+      getNote: null
+   };
+
+   // Actually load and return the instrment
    console.log('Loading instrument:', name + '...');
    if (url == null) {
-      function getNote(note) {
+      instrumentInstance.getNote = function (note) {
          return new OscillatorNode(audioContext, { frequency: Frequency[note] });
-      }
-      return { name, getNote };
+      };
    }
    else {
       const noteData = await loadInstrument(url);
-      function getNote(note) {
+      instrumentInstance.getNote = function (note) {
          return new AudioBufferSourceNode(audioContext, noteData[note]);
-      }
-      return { name, getNote };
+      };
    }
+   return instrumentInstance;
 }

@@ -3,15 +3,16 @@
    "recurseDepth": 10,
    "source": {
       "includePattern": ".+\\.(js(doc|x)?|mjs)$",
-      "excludePattern": "(^|\\/|\\\\)_"
+      "excludePattern": "(^|\\/|\\\\)_",
+      "exclude": ["library/webaudioapi/modules/Fflate.js"]
    },
    "sourceType": "module",
    "tags": {
       "allowUnknownTags": false,
-      "dictionaries": ["jsdoc","closure"]
+      "dictionaries": ["jsdoc", "closure"]
    },
    "templates": {
-      "cleverLinks": true,
+      "cleverLinks": false,
       "monospaceLinks": false,
       "default": {
          "includeDate": false,

@@ -1,5 +1,5 @@
 /**
- * Contains all WebAudioAPI error functionality.
+ * Module containing all {@link WebAudioAPI} error functionality.
  * 
  * @module Errors
  */

@@ -4,6 +4,25 @@ import { loadInstrument } from './modules/Instrument.mjs';
 import * as WebAudioApiErrors from './modules/Errors.mjs';
 import { version } from '../../package.json';
 
+/**
+ * Required function prototype to use when registering a MIDI device callback.
+ * 
+ * @callback MidiEventCallback
+ * @param {MIDIMessageEvent} event - Object containing the detected MIDI event
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIMessageEvent MIDIMessageEvent}
+ */
+
+/**
+ * Composite object type for holding all tempo-related information.
+ * 
+ * @typedef {Object} Tempo
+ * @property {number} beatBase - Note {@link module:Constants.Duration Duration} corresponding to a global beat
+ * @property {number} beatsPerMinute - Number of global beats per minute
+ * @property {number} timeSignatureNumerator - Number of beats per measure
+ * @property {number} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
+ * @property {number} measureLengthSeconds - Length (in seconds) of a measure
+ */
+
 /** Contains all WebAudioAPI top-level functionality. */
 export class WebAudioAPI {
 
@@ -50,7 +69,8 @@ export class WebAudioAPI {
    }
    
    /**
-    * Returns the current global time since the {@link WebAudioAPI} library was started.
+    * Returns the current global time since the {@link WebAudioAPI} library was started or
+    * resumed using the {@link WebAudioAPI#start start()} function.
     * 
     * @returns {number} Current global time since the {@link WebAudioAPI} library was started
     */
@@ -62,24 +82,27 @@ export class WebAudioAPI {
     * Returns a full listing of recognized musical notes by the {@link WebAudioAPI} library.
     * 
     * This function can be used to enumerate available note options for displaying on a web page.
-    * Note, however, that the note parameter passed to the {@link playNote()} function must be the
-    * **numeric value** associated with a certain {@link Note}, not the string-based key.
+    * Note, however, that the `note` parameter passed to the {@link WebAudioAPI#playNote playNote()}
+    * function must be the **numeric MIDI value** associated with a certain
+    * {@link module:Constants.Note Note}, not a string-based key.
     * 
-    * @returns {Note} Listing of recognized musical notes by the {@link WebAudioAPI} library
+    * @returns {Object.<string, number>} Listing of recognized musical notes by the {@link WebAudioAPI} library
+    * @see {@link module:Constants.Note Note}
     */
    getAvailableNotes() {
       return Note;
    }
 
    /**
-    * Returns a full listing of recognized musical durations by the {@link WebAudioAPI} library.
+    * Returns a full listing of recognized note durations by the {@link WebAudioAPI} library.
     * 
-    * This function can be used to enumerate available duration options for displaying on a web
-    * page. Note, however, that the duration parameter passed to the {@link playNote()} function
-    * must be the **numeric value** associated with a certain {@link Duration}, not the
-    * string-based key.
+    * This function can be used to enumerate available duration options for displaying on a
+    * web page. Note, however, that the `duration` parameter passed to the
+    * {@link WebAudioAPI#playNote playNote()} function must be the **numeric value** associated
+    * with a certain {@link module:Constants.Duration Duration}, not a string-based key.
     * 
-    * @returns {Duration} Listing of recognized musical durations by the {@link WebAudioAPI} library
+    * @returns {Object.<string, number>} Listing of recognized note durations by the {@link WebAudioAPI} library
+    * @see {@link module:Constants.Duration Duration}
     */
    getAvailableNoteDurations() {
       return Duration;
@@ -89,10 +112,11 @@ export class WebAudioAPI {
     * Returns a listing of the available instruments located in the specified asset library.
     * 
     * Individual results from this function call can be passed directly to the
-    * {@link updateInstrument()} function to load a specific instrument into an audio track.
+    * {@link WebAudioAPI#updateInstrument updateInstrument()} function to load a specific
+    * instrument into an audio track.
     * 
-    * @param {string} instrumentLibraryLocation - URL location pointing to a {@link WebAudioAPI} instrument library
-    * @returns {Promise<string[]>} Listing of the names of all available instruments
+    * @param {string} instrumentLibraryLocation - Absolute or relative URL pointing to a {@link WebAudioAPI} instrument library
+    * @returns {Promise<string[]>} Listing of all available instrument names
     */
    async getAvailableInstruments(instrumentLibraryLocation) {
       if (Object.keys(this.#instrumentListing).length === 0) {
@@ -112,8 +136,8 @@ export class WebAudioAPI {
    /**
     * Returns a listing of the available effects located in the specified asset library.
     * 
-    * @param {string} effectLibraryLocation - URL location pointing to a {@link WebAudioAPI} effects library
-    * @returns {Promise<string[]>} Listing of the names of all available effects
+    * @param {string} effectLibraryLocation - Absolute or relative URL pointing to a {@link WebAudioAPI} effects library
+    * @returns {Promise<string[]>} Listing of all available effect names
     */
    async getAvailableEffects(effectLibraryLocation) {
       if (Object.keys(this.#effectListing).length === 0) {
@@ -153,8 +177,8 @@ export class WebAudioAPI {
    }
 
    /**
-    * Creates a new music track capable of playing sequential audio. A single track can only
-    * utilize a single instrument at a time.
+    * Creates a track capable of playing sequential audio. A single track can only utilize a
+    * single instrument at a time.
     * 
     * @param {string} name - Name of the newly created track
     */
@@ -164,8 +188,8 @@ export class WebAudioAPI {
    }
 
    /**
-    * Removes the specified music track and cancels any corresponding scheduled audio from
-    * playing or starting to play in the future.
+    * Removes the specified audio track and cancels any audio scheduled for playback on this
+    * track from playing or starting to play in the future.
     * 
     * @param {string} name - Name of the track to remove
     */
@@ -177,7 +201,7 @@ export class WebAudioAPI {
    }
 
    /**
-    * Removes all existing music tracks and cancels all current and scheduled audio.
+    * Removes all existing audio tracks and cancels all current and scheduled audio.
     */
    removeAllTracks() {
       for (const name in this.#tracks)
@@ -185,10 +209,10 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the instrument used to play back audio on a specified track.
+    * Updates the instrument used to play back audio on the specified track.
     * 
     * The instrument name must refer to a valid instrument as returned by the
-    * {@link getAvailableInstruments()} function.
+    * {@link WebAudioAPI#getAvailableInstruments getAvailableInstruments()} function.
     * 
     * @param {string} trackName - Name of the track for which to update the instrument
     * @param {string} instrumentName - Name of the instrument to assign to the track
@@ -202,7 +226,7 @@ export class WebAudioAPI {
    }
 
    /**
-    * Removes the instrument used to play back audio on a specified track.
+    * Removes the instrument used to play back audio on the specified track.
     * 
     * @param {string} trackName - Name of the track from which to remove the current instrument
     */
@@ -214,16 +238,15 @@ export class WebAudioAPI {
    /**
     * Updates the global tempo parameters for all audio tracks.
     * 
-    * The {@link beatBase} parameter should correspond to the beat scaling factor associated with
-    * one of the musical note durations from {@link getAvailableNoteDurations()}.
+    * The `beatBase` parameter should correspond to the beat scaling factor associated with one of
+    * the note durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()}.
     * 
-    * Any of the parameters can be set to {@link null} to keep them unchanged between consecutive
-    * function calls.
+    * Any parameter may be set to `null` to keep it unchanged between consecutive function calls.
     * 
-    * @param {(number|null)} beatBase - Note duration corresponding to a global beat
+    * @param {(number|null)} beatBase - Note {@link module:Constants.Duration Duration} corresponding to a global beat
     * @param {(number|null)} beatsPerMinute - Number of global beats per minute
     * @param {(number|null)} timeSignatureNumerator - Number of beats per measure
-    * @param {(number|null)} timeSignatureDenominator - Note duration corresponding to a measure beat
+    * @param {(number|null)} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
     */
    updateTempo(beatBase, beatsPerMinute, timeSignatureNumerator, timeSignatureDenominator) {
       this.#tempo.beatBase = beatBase ? beatBase : this.#tempo.beatBase;
@@ -234,9 +257,9 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the master volume for all tracks at the specified time to the specified level.
+    * Updates the master volume for all tracks at the specified time.
     * 
-    * Note that the {@link updateTime} parameter can be omitted to immediately cause the level
+    * Note that the `updateTime` parameter can be omitted to immediately cause the level
     * change to take effect.
     * 
     * @param {number} percent - Master volume percentage between [0.0, 1.0]
@@ -248,9 +271,9 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the volume for the specified track at the specified time to the specified level.
+    * Updates the volume for the specified track at the specified time.
     * 
-    * Note that the {@link updateTime} parameter can be omitted to immediately cause the level
+    * Note that the `updateTime` parameter can be omitted to immediately cause the level
     * change to take effect.
     * 
     * @param {string} trackName - Name of the track for which to update the volume
@@ -263,10 +286,9 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the intensity of the master effect for all tracks at the specified time to the
-    * specified level.
+    * Updates the intensity of the master effect for all tracks at the specified time.
     * 
-    * Note that the {@link updateTime} parameter can be omitted to immediately cause the change
+    * Note that the `updateTime` parameter can be omitted to immediately cause the change
     * to take effect.
     * 
     * @param {string} effectName - Name of the master effect to be updated
@@ -282,10 +304,9 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the intensity of the effect for the specified track at the specified time to the
-    * specified level.
+    * Updates the intensity of the effect for the specified track at the specified time.
     * 
-    * Note that the {@link updateTime} parameter can be omitted to immediately cause the change
+    * Note that the `updateTime` parameter can be omitted to immediately cause the change
     * to take effect.
     * 
     * @param {string} trackName - Name of the track for which to update the effect
@@ -315,6 +336,7 @@ export class WebAudioAPI {
     * Removes the specified master effect type from being utilized.
     * 
     * @param {EffectType} effectType - Type of master effect to be removed
+    * @see {@link module:Constants.EffectType EffectType}
     */
    async removeMasterEffectByType(effectType) {
       for (const effectName in this.#effects)
@@ -340,6 +362,7 @@ export class WebAudioAPI {
     * 
     * @param {string} trackName - Name of the track from which to remove the effect
     * @param {EffectType} effectType - Type of track effect to be removed
+    * @see {@link module:Constants.EffectType EffectType}
     */
    async removeTrackEffectByType(trackName, effectType) {
       if (trackName in this.#tracks)
@@ -349,15 +372,15 @@ export class WebAudioAPI {
    /**
     * Registers a callback function to receive incoming events from the specified MIDI device.
     * 
-    * The {@link midiEventCallback} parameter should be a callback function that is expected to
-    * receive one parameter of type {@link MIDIMessageEvent}.
+    * The `midiEventCallback` parameter should be a function that receives one parameter of type
+    * {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIMessageEvent MIDIMessageEvent}.
     * 
-    * Note: A callback may be registered for a MIDI device that is also connected to an audio
-    * track; however, only one top-level event callback can be registered with a MIDI device at
+    * **Note:** A callback may be registered for a MIDI device that is also connected to an audio
+    * track; however, only one top-level event callback can be registered to a MIDI device at
     * a time.
     * 
     * @param {string} midiDeviceName - Name of the MIDI device for which to receive events
-    * @param {MIDIMessageEvent} midiEventCallback - Callback to fire when a MIDI event is received
+    * @param {MidiEventCallback} midiEventCallback - Callback to fire when a MIDI event is received
     * @returns {boolean} Whether the event callback registration was successful
     */
    registerMidiDeviceCallback(midiDeviceName, midiEventCallback) {
@@ -390,12 +413,12 @@ export class WebAudioAPI {
    /**
     * Connects a MIDI device to the specified audio track.
     * 
-    * Note: A single MIDI device can be connected to multiple audio tracks at the same time,
-    * but an audio track can only be connected to a single MIDI device.
+    * **Note:** A single MIDI device can be connected to multiple audio tracks, but an audio track
+    * can only be connected to a single MIDI device.
     * 
     * @param {string} trackName - Name of the track to which to connect the MIDI device
     * @param {string} midiDeviceName - Name of the MIDI device to connect to the track
-    * @returns {Promise<boolean>} Whether connecting to the MIDI device was successful
+    * @returns {Promise<boolean>} Whether connecting the MIDI device to the track was successful
     */
    async connectMidiDeviceToTrack(trackName, midiDeviceName) {
       if (this.#midiDeviceAccess && trackName in this.#tracks) {
@@ -419,43 +442,48 @@ export class WebAudioAPI {
    /**
     * Schedules a note to be played on a specific track for some duration of time.
     * 
-    * Note that the {@link duration} parameter should correspond to the beat scaling factor
-    * associated with one of the note durations from {@link getAvailableNoteDurations()}.
-    * Likewise, the {@link note} parameter should correspond to a MIDI note number as
-    * associated with one of the notes returned from {@link getAvailableNotes()}.
+    * Note that the `duration` parameter should correspond to the beat scaling factor
+    * associated with one of the note durations from
+    * {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()}.
+    * Likewise, the `note` parameter should correspond to a MIDI note number as
+    * associated with one of the notes returned from
+    * {@link WebAudioAPI#getAvailableNotes getAvailableNotes()}.
     * 
     * @param {string} trackName - Name of the track on which to play the note
-    * @param {number} note - MIDI note number to be played
+    * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
     * @param {number} startTime - Global API time at which to start playing the note
-    * @param {number} duration - Number of seconds for which to continue playing the note
+    * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
     * @param {number} [velocity=0.75] - Intensity of the note being played between [0.0, 1.0]
     * @returns {Promise<number>} Duration (in seconds) of the note being played
+    * @see {@link module:Constants.Note Note}
+    * @see {@link module:Constants.Duration Duration}
     */
    async playNote(trackName, note, startTime, duration, velocity=0.75) {
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playNote(note, velocity, startTime, duration) : 0;
    }
 
    /**
-    * Schedules an audio clip to be played back on a specific track for some duration of time.
+    * Schedules an audio clip to be played on a specific track for some duration of time.
     * 
-    * If the {@link duration} parameter is not specified or is set to {@link null}, the audio clip
-    * will play to completion.
+    * If the `duration` parameter is not specified or is set to `null`, the audio clip will
+    * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the clip
-    * @param {ArrayBuffer} buffer - Buffer containing raw, undecoded, formatted audio data
+    * @param {ArrayBuffer} buffer - Buffer containing raw, audio-encoded data
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number|null} [duration] - Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
     */
    async playClip(trackName, buffer, startTime, duration) {
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playClip(buffer, startTime, duration) : 0;
    }
 
    /**
-    * Schedules an audio file to be played back on a specific track for some duration of time.
+    * Schedules an audio file to be played on a specific track for some duration of time.
     * 
-    * If the {@link duration} parameter is not specified or is set to {@link null}, the audio file
-    * will play to completion.
+    * If the `duration` parameter is not specified or is set to `null`, the audio file will
+    * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the file
     * @param {string} fileURL - URL location pointing to an audio file
@@ -469,15 +497,16 @@ export class WebAudioAPI {
 
    /**
     * Immediately begins playing a note on the specified track. Playback continues until the note
-    * is explicitly stopped using the {@link stopNote()} function.
+    * is explicitly stopped using the {@link WebAudioAPI#stopNote stopNote()} function.
     * 
-    * Note that the {@link note} parameter should correspond to a MIDI note number as associated
-    * with one of the notes returned from {@link getAvailableNotes()}.
+    * Note that the `note` parameter should correspond to a MIDI note number as associated
+    * with one of the notes returned from {@link WebAudioAPI#getAvailableNotes getAvailableNotes()}.
     * 
     * @param {string} trackName - Name of the track on which to start playing the note
-    * @param {number} note - MIDI note number to be played
+    * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
     * @param {number} [velocity=0.75] - Intensity of the note to play between [0.0, 1.0]
-    * @returns {Promise<Object>} Reference to newly scheduled note
+    * @returns {Promise<Object>} Reference to the newly scheduled note
+    * @see {@link module:Constants.Note Note}
     */
    async startNote(trackName, note, velocity=0.75) {
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playNoteAsync(note, velocity) : {};
@@ -485,11 +514,11 @@ export class WebAudioAPI {
 
    /**
     * Immediately stop playing a note on the specified track. The note to be stopped must be a
-    * reference to an actively playing note that was previously started using the
-    * {@link startNote()} function.
+    * reference to an actively playing note that was previously returned from the
+    * {@link WebAudioAPI#startNote startNote()} function.
     * 
     * @param {string} trackName - Name of the track on which to stop playing the note
-    * @param {Object} note - Reference to an active note that was started using {@link startNote()}
+    * @param {Object} note - Reference to an active note that was started using {@link WebAudioAPI#startNote startNote()}
     */
    async stopNote(trackName, note) {
       if (trackName in this.#tracks)
@@ -497,7 +526,7 @@ export class WebAudioAPI {
    }
 
    /**
-    * Start the {@link WebAudioAPI} library and allow audio playback to resume.
+    * Starts the {@link WebAudioAPI} library and allows audio playback to resume.
     */
    async start() {
       this.#started = true;
@@ -506,7 +535,7 @@ export class WebAudioAPI {
    }
  
    /**
-    * Stop the {@link WebAudioAPI} library and pause any currently playing audio.
+    * Stops the {@link WebAudioAPI} library and pauses any currently playing audio.
     */
    stop() {
       this.#started = false;

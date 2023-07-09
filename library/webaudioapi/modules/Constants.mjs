@@ -92,6 +92,6 @@ export const EffectType = {
    Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
    Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
    Panning: 31, Equalization: 32,                                                   // Spectral Effects
-   Compression: 41, Distortion: 42,                                                 // Dynamic Effects
+   Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
    LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
 };

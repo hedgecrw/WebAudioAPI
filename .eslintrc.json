@@ -36,6 +36,12 @@
             "rules": {
                 "no-inner-declarations": "off"
             }
+        },
+        {
+            "files": ["EffectBase.mjs"],
+            "rules": {
+                "no-unused-vars": "off"
+            }
         }
     ]
 }

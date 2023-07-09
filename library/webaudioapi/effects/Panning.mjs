@@ -1,16 +1,54 @@
-import { EffectType } from '../modules/Constants.mjs';
-import { Effect } from './Effect.mjs';
-/**
- * Class representing a Panning effect
- * @extends Effect
- */
-export class Panning extends Effect {
+import { EffectBase } from './EffectBase.mjs';
 
-   constructor(name) {
-      super(EffectType.Panning, name);
+/**
+ * Class representing a Panning effect.
+ * 
+ * A Panning effect distributes an audio signal across a stereo field by making it appear to
+ * originate from different places in the left-right audio spectrum, thereby creating more space
+ * and width.
+ * 
+ * @extends EffectBase
+ */
+export class Panning extends EffectBase {
+
+   // Effect-specific private variables
+   /** @type {StereoPannerNode} */
+   #panningNode;
+
+   /**
+    * Constructs a new {@link Panning} effect object.
+    */
+   constructor(audioContext) {
+      super(audioContext);
+      this.#panningNode = new StereoPannerNode(audioContext);
    }
 
-   update(leftToRightRatio) {
-      // leftToRightRatio: ratio of sound output from the left speaker to the right speaker
+   async load() {
+      this.#panningNode.pan.value = 0.0;
+   }
+
+   /**
+    * Updates the {@link Panning} effect according to the specified parameters at the
+    * specified time.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
+    * 
+    * @param {number} intensityPercent - Ratio of sound output from the left speaker to the right speaker as a percentage between [0.0, 1.0]
+    * @param {number} [updateTime] - Global API time at which to update the effect
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
+    */
+   async update({intensityPercent, updateTime}) {
+      const panningValue = 2.0 * (intensityPercent - 0.5);
+      this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
+      return true;
+   }
+
+   getInputNode() {
+      return this.#panningNode;
+   }
+
+   getOutputNode() {
+      return this.#panningNode;
    }
 }

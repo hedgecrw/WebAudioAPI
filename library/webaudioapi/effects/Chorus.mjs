@@ -1,20 +1,51 @@
-import { EffectType } from '../modules/Constants.mjs';
-import { Effect } from './Effect.mjs';
+import { EffectBase } from './EffectBase.mjs';
 
 /**
- * Class representing a Chorus effect
- * @extends Effect
+ * Class representing a Chorus effect.
+ * 
+ * A Chorus effect is an audio modulation effect that replicates an audio signal and modulates
+ * and delays the result, such that it comes directly after and alters the original signal's
+ * pitch. This effect is used to thicken the tone of an audio signal and create an epic feeling.
+ * 
+ * @extends EffectBase
  */
-export class Chorus extends Effect {
+export class Chorus extends EffectBase {
 
-   constructor(name, shape) {
-      super(EffectType.Chorus, name);
-      // shape: type of waveform used to modulate the delayed signal
+   /**
+    * Constructs a new {@link Chorus} effect object.
+    */
+   constructor(audioContext) {
+      super(audioContext);
    }
 
-   update(rate, delayOffset, variableFeedback) {
-      // rate: frequency at which the low-frequency oscillator modulates the chorus signal
-      // delayOffset: time between the original signal and the chorus signal
-      // variableFeedback: decaying repeats of the chorus signal
+   async load() {
+      return;
+   }
+
+   /**
+    * Updates the {@link Chorus} effect according to the specified parameters at the
+    * specified time.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
+    * 
+    * @param {number} rate - Frequency at which an oscillator modulates the delayed chorus signal
+    * @param {string} shape - Waveform shape used to modulate the delayed chorus signal
+    * @param {number} delayOffset - Number of seconds delay between the original signal and the chorus signal
+    * @param {number} variableFeedback - Percentage of processed signal to be fed back into the chorus circuit
+    * @param {number} intensityPercent - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} [updateTime] - Global API time at which to update the effect
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
+    */
+   async update({rate, shape, delayOffset, variableFeedback, intensityPercent, updateTime}) {
+      return false;
+   }
+
+   getInputNode() {
+      return;
+   }
+
+   getOutputNode() {
+      return;
    }
 }

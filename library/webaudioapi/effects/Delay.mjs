@@ -1,19 +1,55 @@
-import { EffectType } from '../modules/Constants.mjs';
-import { Effect } from './Effect.mjs';
+import { EffectBase } from './EffectBase.mjs';
 
 /**
- * Class representing a Delay effect
- * @extends Effect
+ * Class representing a Delay effect.
+ * 
+ * A Delay effect replicates an audio signal and plays back one or more possibly attenuated
+ * copies at a later, user-specified time.
+ * 
+ * @extends EffectBase
  */
-export class Delay extends Effect {
+export class Delay extends EffectBase {
 
-   constructor(name) {
-      super(EffectType.Delay, name);
+   // Effect-specific private variables
+   /** @type {DelayNode} */
+   #delayNode;
+
+   /**
+    * Constructs a new {@link Delay} effect object.
+    */
+   constructor(audioContext) {
+      super(audioContext);
+      this.#delayNode = new DelayNode(audioContext);
    }
 
-   update(feedback, time, cutoffFrequency) {
-      // feedback: the number of echoes and the resonance between each echo
-      // time: time between the original audio and its echo
-      // cutoffFrequency: frequency spectrum outside of which to block acoustic content
+   async load() {
+      return;
+   }
+
+   /**
+    * Updates the {@link Delay} effect according to the specified parameters at the
+    * specified time.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
+    * 
+    * @param {number} feedback - Number of echoes and the resonance between each echo
+    * @param {number} time - Number of seconds between the original signal and its echo
+    * @param {number} cutoffFrequencyLower - Frequency below which to block acoustic content
+    * @param {number} cutoffFrequencyUpper - Frequency above which to block acoustic content
+    * @param {number} intensityPercent - Ratio of delayed-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} [updateTime] - Global API time at which to update the effect
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
+    */
+   async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensityPercent, updateTime}) {
+      return false;
+   }
+
+   getInputNode() {
+      return;
+   }
+
+   getOutputNode() {
+      return;
    }
 }

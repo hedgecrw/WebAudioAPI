@@ -10,6 +10,7 @@
  */
 
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
+import { loadEffect } from './Effect.mjs';
 
 /**
  * Creates a new audio {@link Track} object capable of playing sequential audio.
@@ -28,9 +29,9 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
 
    // Track-local variable definitions
    let instrument = null, midiDevice = null;
-   const audioSources = [], asyncAudioSources = [], effects = {};
-   const audioSink = new GainNode(audioContext), volumeNode = new GainNode(audioContext);
-   audioSink.connect(volumeNode).connect(trackAudioSink);
+   const audioSources = [], asyncAudioSources = [], effects = [];
+   const audioSink = new GainNode(audioContext);
+   audioSink.connect(trackAudioSink);
 
    // Private internal Track functions
    function createAsyncNote(noteValue, sourceNode, volumeNode) {
@@ -79,68 +80,88 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    }
 
    /**
-    * Updates the playback volume for the current track at the specified time.
+    * Applies a new track effect at the specified time.
     * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the level
-    * change to take effect.
+    * Calling this function affects the sequential ordering in which effects will be
+    * processed, with each new call appending the corresponding effect to the *end* of the
+    * processing sequence.
     * 
-    * @param {number} percent - Track volume percentage between [0.0, 1.0]
-    * @param {number} [updateTime] - Global API time at which to update the volume
+    * If an effect with the specified `effectName` has already been applied , then calling
+    * this function will simply re-order the effect to move it to the very end of the effect
+    * processing sequence, without changing its parameter values.
+    * 
+    * @param {string} effectName - User-defined name to associate with the track effect
+    * @param {number} effectType - Track {@link module:Constants.EffectType EffectType} to apply
+    * @see {@link module:Constants.EffectType EffectType}
     * @memberof Track
     * @instance
     */
-   function updateVolume(percent, updateTime) {
-      volumeNode.gain.setValueAtTime(percent, updateTime == null ? audioContext.currentTime : updateTime);
+   async function applyEffect(effectName, effectType) {
+      const existingEffect = await this.removeEffect(effectName);
+      const newEffect = existingEffect ? existingEffect : await loadEffect(audioContext, effectName, effectType);
+      newEffect.output.connect(trackAudioSink);
+      if (effects.length) {
+         const previousEffect = effects.slice(-1)[0];
+         previousEffect.output.disconnect();
+         previousEffect.output.connect(newEffect.input);
+      }
+      else {
+         audioSink.disconnect();
+         audioSink.connect(newEffect.input);
+      }
+      effects.push(newEffect);
    }
-   
+
    /**
-    * Updates the intensity of the effect for the current track at the specified time.
+    * Updates the intensity and parameters of a track effect at the specified time.
     * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the change
-    * to take effect.
+    * Calling this function will **not** affect the sequential processing order of any applied
+    * effects.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
     * 
     * @param {string} effectName - Name of the track effect to be updated
     * @param {Object} effectOptions - Effect-specific options (TODO)
     * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
     * @memberof Track
     * @instance
     */
-   function updateEffect(effectName, effectOptions, percent, updateTime) {
-      // TODO: Implement (add if non-existent, else update, if no trackName, then master, effectType = reverb, effectOptions = impulse url)
-      // effectOptions = null just updates percent
-      // percent = null removes effect
-      console.log(name, effectName, effectOptions, percent, updateTime);
+   async function updateEffect(effectName, effectOptions, percent, updateTime) {
+      for (const effect of effects)
+         if (effect.name == effectName)
+            return await effect.update(effectOptions, percent, updateTime);
+      return false;
    }
 
    /**
-    * Removes the specified effect from being utilized on the current track.
+    * Removes the specified track effect from being applied.
     * 
     * @param {string} effectName - Name of the track effect to be removed
+    * @returns {Effect|null} Existing effect or null
     * @memberof Track
     * @instance
     */
-   function removeEffectByName(effectName) {
-      if (effectName in effects) {
-         // TODO: Disconnect from effects graph
-         delete effects[effectName];
-      }
-   }
-
-   /**
-    * Removes the specified effect type from being utilized on the current track.
-    * 
-    * @param {EffectType} effectType - Type of track effect to be removed
-    * @memberof Track
-    * @instance
-    * @see {@link module:Constants.EffectType EffectType}
-    */
-   function removeEffectByType(effectType) {
-      for (const effectName in effects)
-         if (effects[effectName].type == effectType) {
-            // TODO: Disconnect from effects graph
-            delete effects[effectName];
+   async function removeEffect(effectName) {
+      let existingEffect = null;
+      for (const [index, effect] of effects.entries())
+         if (effect.name == effectName) {
+            existingEffect = effects.splice(index, 1)[0];
+            if (index == 0) {
+               audioSink.disconnect();
+               audioSink.connect(effects.length ? effects[0].input : trackAudioSink);
+            }
+            else {
+               effects[index-1].output.disconnect();
+               effects[index-1].output.connect((effects.length > index) ? effects[index].input : trackAudioSink);
+            }
+            existingEffect.input.disconnect();
+            existingEffect.output.disconnect();
+            break;
          }
+      return existingEffect;
    }
 
    /**
@@ -312,11 +333,13 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     * @instance
     */
    function deleteTrack() {
+      disconnectFromMidiDevice();
       for (const source of audioSources)
          source.stop();
       for (const source of asyncAudioSources)
          source.sourceNode.stop();
-      volumeNode.disconnect();
+      for (const effect of effects)
+         effect.output.disconnect();
    }
 
    // Returns an object containing functions and attributes within the public Track namespace
@@ -327,7 +350,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
        * @instance
        */
       name,
-      updateInstrument, removeInstrument, updateVolume, updateEffect, removeEffectByName, removeEffectByType,
-      stopNoteAsync, playNoteAsync, playNote, playClip, playFile, connectToMidiDevice, disconnectFromMidiDevice, deleteTrack
+      updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync,
+      playNoteAsync, playNote, playClip, playFile, connectToMidiDevice, disconnectFromMidiDevice, deleteTrack
    };
 }

@@ -18,7 +18,7 @@ class ChordBlock {
    getNotes() {
       return this.noteElements.filter(element => element.value != '0').map(element => element.value);
    }
-   async loadBlock(api, trackName) {}
+   async loadBlock(api, trackName) { return; }
    async runBlock(api, trackName, executionStartTime) {
       let durationSeconds = 0.0;
       for (const note of this.getNotes())
@@ -50,19 +50,20 @@ class EffectBlock {
       this.effectElement = effectElement;
       this.valueElement = valueElement;
    }
+   effectName() {
+      return this.effectElement.options[this.effectElement.selectedIndex].text;
+   }
    effectType() {
       return this.effectElement.value;
    }
    effectValue() {
       return this.valueElement.value;
    }
-   async loadBlock(api, trackName) {}
+   async loadBlock(api, trackName) {
+      await api.applyTrackEffect(trackName, this.effectName(), this.effectType());
+   }
    async runBlock(api, trackName, executionStartTime) {
-      const effectType = this.effectType();
-      if (effectType == 'Volume')
-         api.updateTrackVolume(trackName, 0.01 * this.effectValue(), executionStartTime);
-      else
-         api.updateTrackEffect(trackName, this.effectType(), null, 0.01 * this.effectValue(), executionStartTime);
+      await api.updateTrackEffect(trackName, this.effectName(), null, 0.01 * this.effectValue(), executionStartTime);
       return executionStartTime;
    }
 }
@@ -88,6 +89,10 @@ class NetsBloxAudioScript {
 
       // Initialize the script-local variables
       audioAPI.createTrack(scriptID);
+      const effectTypes = audioAPI.getAvailableEffects();
+      //audioAPI.applyTrackEffect(scriptID, 'Reverb', effectTypes.Reverb);
+      audioAPI.applyTrackEffect(scriptID, 'Panning', effectTypes.Panning);
+      audioAPI.applyTrackEffect(scriptID, 'Volume', effectTypes.Volume);
       this.trackName = scriptID;
       this.audioAPI = audioAPI;
       this.scriptID = scriptID;

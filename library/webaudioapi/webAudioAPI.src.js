@@ -2,6 +2,7 @@ import { Note, Duration, EffectType } from './modules/Constants.mjs';
 import { createTrack as createTrackImpl } from './modules/Track.mjs';
 import { loadInstrument } from './modules/Instrument.mjs';
 import * as WebAudioApiErrors from './modules/Errors.mjs';
+import { loadEffect } from './modules/Effect.mjs';
 import { version } from '../../package.json';
 
 /**
@@ -30,19 +31,17 @@ export class WebAudioAPI {
    static #instance = null;
 
    // WebAudioAPI private variable definitions
-   #audioContext = new AudioContext(); #started = false; #masterVolume = 1.0;
-   #tracks = {}; #effects = {}; #effectListing = {}; #instrumentListing = {}; #loadedInstruments = {}; #midiCallbacks = {};
+   #audioContext = new AudioContext(); #started = false; #midiCallbacks = {};
+   #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
 
    // Required audio nodes
    /** @type {(null|MIDIAccess)} */
-   #midiDeviceAccess = null; 
+   #midiDeviceAccess = null;
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
    /** @type {GainNode} */
    #sourceSinkNode;
-   /** @type {GainNode} */
-   #masterVolumeNode;
 
    /**
     * Returns a singleton instance of the WebAudioAPI interface.
@@ -54,9 +53,9 @@ export class WebAudioAPI {
       WebAudioAPI.#instance = this;
       
       // Generate and connect all required audio nodes
+      this.#sourceSinkNode = new GainNode(this.#audioContext);
       this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
-      this.#sourceSinkNode = new GainNode(this.#audioContext), this.#masterVolumeNode = new GainNode(this.#audioContext);
-      this.#sourceSinkNode.connect(this.#masterVolumeNode).connect(this.#compressorNode).connect(this.#audioContext.destination);
+      this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#audioContext.destination);
    }
 
    /**
@@ -109,6 +108,23 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns a listing of all available effects in the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available effect options for displaying on a
+    * web page. Note, however, that the `effectType` parameter passed to either the
+    * {@link WebAudioAPI#applyMasterEffect applyMasterEffect()} or the
+    * {@link WebAudioAPI#applyTrackEffect applyTrackEffect()} function must be the
+    * **numeric value** associated with a certain {@link module:Constants.EffectType EffectType},
+    * not a string-based key.
+    * 
+    * @returns {Object.<string, number>} Listing of all available effect types in the {@link WebAudioAPI} library
+    * @see {@link module:Constants.EffectType EffectType}
+    */
+   getAvailableEffects() {
+      return EffectType;
+   }
+
+   /**
     * Returns a listing of the available instruments located in the specified asset library.
     * 
     * Individual results from this function call can be passed directly to the
@@ -131,26 +147,6 @@ export class WebAudioAPI {
          });
       }
       return Object.keys(this.#instrumentListing);
-   }
-
-   /**
-    * Returns a listing of the available effects located in the specified asset library.
-    * 
-    * @param {string} effectLibraryLocation - Absolute or relative URL pointing to a {@link WebAudioAPI} effects library
-    * @returns {Promise<string[]>} Listing of all available effect names
-    */
-   async getAvailableEffects(effectLibraryLocation) {
-      if (Object.keys(this.#effectListing).length === 0) {
-         const cleanLocation = effectLibraryLocation.replace(/\/$/, '');
-         const response = await fetch(cleanLocation + '/effectLibrary.json', {
-            headers: { 'Accept': 'application/json' }
-         });
-         const effectData = await response.json();
-         Object.keys(effectData).forEach(effectName => {
-            this.#effectListing[effectName] = cleanLocation + effectData[effectName];
-         });
-      }
-      return Object.keys(this.#effectListing);
    }
 
    /**
@@ -257,116 +253,145 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the master volume for all tracks at the specified time.
+    * Applies a new master effect to the aggregate output from all tracks at the specified time.
     * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the level
-    * change to take effect.
+    * Calling this function affects the sequential ordering in which master effects will be
+    * processed, with each new call appending the corresponding effect to the *end* of the
+    * processing sequence.
     * 
-    * @param {number} percent - Master volume percentage between [0.0, 1.0]
-    * @param {number} [updateTime] - Global API time at which to update the volume
+    * The parameters of the added effect will be set to their default values such that the result
+    * of adding the effect will not be audible. In order to manipulate and utilize this effect,
+    * use the {@link WebAudioAPI#updateMasterEffect updateMasterEffect()} function.
+    * 
+    * If a master effect with the specified `effectName` has already been applied, then calling
+    * this function will simply re-order the effect to move it to the very end of the effect
+    * processing sequence, without changing its parameter values.
+    * 
+    * @param {string} effectName - User-defined name to associate with the master effect
+    * @param {number} effectType - Master {@link module:Constants.EffectType EffectType} to apply
+    * @see {@link module:Constants.EffectType EffectType}
     */
-   updateMasterVolume(percent, updateTime) {
-      this.#masterVolume = percent;
-      this.#masterVolumeNode.gain.setValueAtTime(percent, updateTime == null ? this.#audioContext.currentTime : updateTime);
+   async applyMasterEffect(effectName, effectType) {
+      const existingEffect = await this.removeMasterEffect(effectName);
+      const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, effectType);
+      newEffect.output.connect(this.#compressorNode);
+      if (this.#effects.length) {
+         const previousEffect = this.#effects.slice(-1)[0];
+         previousEffect.output.disconnect();
+         previousEffect.output.connect(newEffect.input);
+      }
+      else {
+         this.#sourceSinkNode.disconnect();
+         this.#sourceSinkNode.connect(newEffect.input);
+      }
+      this.#effects.push(newEffect);
    }
 
    /**
-    * Updates the volume for the specified track at the specified time.
+    * Applies a new effect to the specified track at the specified time.
     * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the level
-    * change to take effect.
+    * Calling this function affects the sequential ordering in which effects will be processed
+    * within the specified track, with each new call appending the corresponding effect to the
+    * *end* of the processing sequence.
     * 
-    * @param {string} trackName - Name of the track for which to update the volume
-    * @param {number} percent - Track volume percentage between [0.0, 1.0]
-    * @param {number} [updateTime] - Global API time at which to update the volume
+    * The parameters of the added effect will be set to their default values such that the result
+    * of adding the effect will not be audible. In order to manipulate and utilize this effect,
+    * use the {@link WebAudioAPI#updateTrackEffect updateTrackEffect()} function.
+    * 
+    * If an effect with the specified `effectName` has already been applied to the specified
+    * track, then calling this function will simply re-order the effect to move it to the very end
+    * of the effect processing sequence, without changing its parameter values.
+    * 
+    * @param {string} trackName - Name of the track on which to apply the effect
+    * @param {string} effectName - User-defined name to associate with the track effect
+    * @param {number} effectType - Track-specific {@link module:Constants.EffectType EffectType} to apply
+    * @see {@link module:Constants.EffectType EffectType}
     */
-   updateTrackVolume(trackName, percent, updateTime) {
+   async applyTrackEffect(trackName, effectName, effectType) {
       if (trackName in this.#tracks)
-         this.#tracks[trackName].updateVolume(percent, updateTime);
+         await this.#tracks[trackName].applyEffect(effectName, effectType);
    }
 
    /**
-    * Updates the intensity of the master effect for all tracks at the specified time.
+    * Updates the intensity and parameters of a master effect at the specified time.
     * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the change
-    * to take effect.
+    * Calling this function will **not** affect the sequential processing order of any applied
+    * effects.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
     * 
     * @param {string} effectName - Name of the master effect to be updated
     * @param {Object} effectOptions - Effect-specific options (TODO)
     * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async updateMasterEffect(effectName, effectOptions, percent, updateTime) {
-      // TODO: Implement (add if non-existent, else update, if no trackName, then master, effectType = reverb, effectOptions = impulse url)
-      // effectOptions = null just updates percent
-      // percent = null removes effect
-      console.log(effectName, effectOptions, percent, updateTime);
+      // TODO: Verify percent within valid range, Errors.mjs
+      for (const effect of this.#effects)
+         if (effect.name == effectName)
+            return await effect.update(effectOptions, percent, updateTime);
+      return false;
    }
 
    /**
-    * Updates the intensity of the effect for the specified track at the specified time.
+    * Updates the intensity and parameters of a track-specific effect at the specified time.
     * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the change
-    * to take effect.
+    * Calling this function will **not** affect the sequential processing order of any applied
+    * effects.
+    * 
+    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+    * changes to take effect.
     * 
     * @param {string} trackName - Name of the track for which to update the effect
     * @param {string} effectName - Name of the track effect to be updated
     * @param {Object} effectOptions - Effect-specific options (TODO)
     * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async updateTrackEffect(trackName, effectName, effectOptions, percent, updateTime) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].updateEffect(effectName, effectOptions, percent, updateTime);
+      // TODO: Verify percent within valid range, Errors.mjs
+      return (trackName in this.#tracks) ? await this.#tracks[trackName].updateEffect(effectName, effectOptions, percent, updateTime) : false;
    }
 
    /**
-    * Removes the specified master effect from being utilized.
+    * Removes the specified master effect from being applied.
     * 
     * @param {string} effectName - Name of the master effect to be removed
+    * @returns {Promise<Effect|null>} The effect that was removed, if any
+    * @see {@link Effect}
     */
-   async removeMasterEffectByName(effectName) {
-      if (effectName in this.#effects) {
-         // TODO: Disconnect from effects graph
-         delete this.#effects[effectName];
-      }
-   }
-
-   /**
-    * Removes the specified master effect type from being utilized.
-    * 
-    * @param {EffectType} effectType - Type of master effect to be removed
-    * @see {@link module:Constants.EffectType EffectType}
-    */
-   async removeMasterEffectByType(effectType) {
-      for (const effectName in this.#effects)
-         if (this.#effects[effectName].type == effectType) {
-            // TODO: Disconnect from effects graph
-            delete this.#effects[effectName];
+   async removeMasterEffect(effectName) {
+      let existingEffect = null;
+      for (const [index, effect] of this.#effects.entries())
+         if (effect.name == effectName) {
+            existingEffect = this.#effects.splice(index, 1)[0];
+            if (index == 0) {
+               this.#sourceSinkNode.disconnect();
+               this.#sourceSinkNode.connect(this.#effects.length ? this.#effects[0].input : this.#compressorNode);
+            }
+            else {
+               this.#effects[index-1].output.disconnect();
+               this.#effects[index-1].output.connect((this.#effects.length > index) ? this.#effects[index].input : this.#compressorNode);
+            }
+            existingEffect.input.disconnect();
+            existingEffect.output.disconnect();
+            break;
          }
+      return existingEffect;
    }
 
    /**
-    * Removes the specified effect from being utilized on the corresponding track.
+    * Removes the specified effect from being applid on the corresponding track.
     * 
     * @param {string} trackName - Name of the track from which to remove the effect
     * @param {string} effectName - Name of the track effect to be removed
     */
-   async removeTrackEffectByName(trackName, effectName) {
+   async removeTrackEffect(trackName, effectName) {
       if (trackName in this.#tracks)
-         this.#tracks[trackName].removeEffectByName(effectName);
-   }
-
-   /**
-    * Removes the specified effect type from being utilized on the corresponding track.
-    * 
-    * @param {string} trackName - Name of the track from which to remove the effect
-    * @param {EffectType} effectType - Type of track effect to be removed
-    * @see {@link module:Constants.EffectType EffectType}
-    */
-   async removeTrackEffectByType(trackName, effectType) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].removeEffectByType(effectType);
+         await this.#tracks[trackName].removeEffect(effectName);
    }
 
    /**
@@ -459,6 +484,7 @@ export class WebAudioAPI {
     * @see {@link module:Constants.Duration Duration}
     */
    async playNote(trackName, note, startTime, duration, velocity=0.75) {
+      // TODO: Verify velocity within valid range, Errors.mjs
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playNote(note, velocity, startTime, duration) : 0;
    }
 
@@ -509,6 +535,7 @@ export class WebAudioAPI {
     * @see {@link module:Constants.Note Note}
     */
    async startNote(trackName, note, velocity=0.75) {
+      // TODO: Verify velocity within valid range, Errors.mjs
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playNoteAsync(note, velocity) : {};
    }
 
@@ -530,7 +557,6 @@ export class WebAudioAPI {
     */
    async start() {
       this.#started = true;
-      this.#masterVolumeNode.gain.setValueAtTime(this.#masterVolume, this.#audioContext.currentTime);
       await this.#audioContext.resume();
    }
  
@@ -539,7 +565,6 @@ export class WebAudioAPI {
     */
    stop() {
       this.#started = false;
-      this.#masterVolumeNode.gain.setTargetAtTime(0.0, this.#audioContext.currentTime, 0.03);
       setTimeout(async () => { if (!this.#started) await this.#audioContext.suspend(); }, 200);
    }
 }

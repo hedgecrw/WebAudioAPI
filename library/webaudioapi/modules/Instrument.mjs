@@ -21,7 +21,7 @@ import { decompressSync } from './Fflate.js';
  * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @param {string} name - Name of the instrument to load
  * @param {string|null} url - URL pointing to the instrument data to load or `null`
- * @returns {Instrument} Newly loaded {@link Instrument}
+ * @returns {Promise<Instrument>} Newly loaded {@link Instrument}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @see {@link Instrument}
  * @async

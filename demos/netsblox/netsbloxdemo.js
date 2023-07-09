@@ -1,5 +1,3 @@
-let durations = null, effects = null;
-
 const guitar_clips = {
    'Guitar Clip 1': 'audioclips/HIPHOP_DUSTYGUITAR_001.wav', 'Guitar Clip 2': 'audioclips/HIPHOP_DUSTYGUITAR_002.wav'
 };
@@ -20,10 +18,8 @@ function addClipOptions(clipElement, clips) {
 }
 
 function addEffectOptions(effectElement) {
-   effects = {
-      'Volume': 'Volume', 'Panning': 'Panning', 'Reverb': 'Reverb'
-   };
-   for (let effect in effects)
+   const effects = window.audioAPI.getAvailableEffects();
+   for (const effect in effects)
       effectElement.add(new Option(effect, effects[effect]));
 }
 
@@ -100,7 +96,7 @@ function addClip(element, itemIndex, clipName, clips) {
    element.appendChild(clipElement);
 }
 
-function addEffect(element, itemIndex, effectName, value) {
+function addEffect(element, itemIndex, effectType, value) {
    const effectElement = document.createElement('div');
    const chordLabel = document.createElement('span');
    chordLabel.innerHTML = '<b>Adjust:</b>';
@@ -129,8 +125,8 @@ function addEffect(element, itemIndex, effectName, value) {
    effectElement.appendChild(effectSelection);
    effectElement.appendChild(effectValueLabel);
    effectElement.appendChild(effectValue);
-   if (effectName)
-      effectSelection.selectedIndex = Object.keys(effects).indexOf(effectName);
+   if (effectType)
+      effectSelection.value = effectType;
    const addClipButton = document.createElement('div');
    addClipButton.id = 'addChord';
    addClipButton.onclick = function(_element) { addClip(element, window.guitarItemIndex++, null, guitar_clips) };
@@ -154,10 +150,11 @@ function loadPianoScript() {
 
 function loadGuitarScript() {
    window.guitarItemIndex = 0;
+   const effectTypes = window.audioAPI.getAvailableEffects();
    addClip(document.getElementById('guitar_script'), window.guitarItemIndex++, 'Guitar Clip 1', guitar_clips);
-   addEffect(document.getElementById('guitar_script'), window.guitarItemIndex++, 'Volume', 25);
+   addEffect(document.getElementById('guitar_script'), window.guitarItemIndex++, effectTypes.Volume, 25);
    addClip(document.getElementById('guitar_script'), window.guitarItemIndex++, 'Guitar Clip 2', guitar_clips);
-   addEffect(document.getElementById('guitar_script'), window.guitarItemIndex++, 'Volume', 100);
+   addEffect(document.getElementById('guitar_script'), window.guitarItemIndex++, effectTypes.Volume, 100);
 }
 
 function loadDrumsScript() {
@@ -214,23 +211,28 @@ window.onload = () => {
    loadGuitarScript();
    loadDrumsScript();
 
+   const effectTypes = window.audioAPI.getAvailableEffects();
+   //window.audioAPI.applyMasterEffect('Reverb', effectTypes.Reverb);
+   window.audioAPI.applyMasterEffect('Panning', effectTypes.Panning);
+   window.audioAPI.applyMasterEffect('Volume', effectTypes.Volume);
+
    window.addEventListener('audiodone', window.stop);
    
    document.getElementById('piano_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Piano'); });
    document.getElementById('guitar_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Guitar'); });
    document.getElementById('drums_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Drums'); });
-   document.getElementById('master_volume').addEventListener('input', (e) => { window.audioAPI.updateMasterVolume(0.01 * e.target.value); });
+   document.getElementById('master_volume').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Volume', null, 0.01 * e.target.value); });
    document.getElementById('master_panning').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Panning', null, 0.01 * e.target.value); });
-   document.getElementById('master_reverb').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Reverb', null, 0.01 * e.target.value); });
-   document.getElementById('piano_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackVolume('Piano', 0.01 * e.target.value); });
+   document.getElementById('master_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateMasterEffect('Reverb', null, 0.01 * e.target.value); });
+   document.getElementById('piano_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Volume', null, 0.01 * e.target.value); });
    document.getElementById('piano_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Panning', null, 0.01 * e.target.value); });
-   document.getElementById('piano_reverb').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Reverb', null, 0.01 * e.target.value); });
-   document.getElementById('guitar_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackVolume('Guitar', 0.01 * e.target.value); });
+   document.getElementById('piano_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateTrackEffect('Piano', 'Reverb', null, 0.01 * e.target.value); });
+   document.getElementById('guitar_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Volume', null, 0.01 * e.target.value); });
    document.getElementById('guitar_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Panning', null, 0.01 * e.target.value); });
-   document.getElementById('guitar_reverb').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Reverb', null, 0.01 * e.target.value); });
-   document.getElementById('drums_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackVolume('Drums', 0.01 * e.target.value); });
+   document.getElementById('guitar_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateTrackEffect('Guitar', 'Reverb', null, 0.01 * e.target.value); });
+   document.getElementById('drums_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Volume', null, 0.01 * e.target.value); });
    document.getElementById('drums_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Panning', null, 0.01 * e.target.value); });
-   document.getElementById('drums_reverb').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Reverb', null, 0.01 * e.target.value); });
+   document.getElementById('drums_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateTrackEffect('Drums', 'Reverb', null, 0.01 * e.target.value); });
    timeSigNumerator.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });
    timeSigDenominator.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });
    bpmBase.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });

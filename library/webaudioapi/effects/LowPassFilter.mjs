@@ -32,7 +32,7 @@ export class LowPassFilter extends EffectBase {
    static getParameters() {
       return [
          { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 },
-         { name: 'intensityPercent', type: 'number', validValues: [0.0001, 1000], defaultValue: 0.0001 }
+         { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
       ];
    }
 
@@ -49,15 +49,17 @@ export class LowPassFilter extends EffectBase {
     * changes to take effect.
     * 
     * @param {number} cutoffFrequency - Frequency above which audio content will be reduced
-    * @param {number} intensityPercent - Amount of frequency exaggeration around the cutoff as a percentage between [0.0, 1.0]
+    * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({cutoffFrequency}, intensityPercent, updateTime) {
-      // intensityPercent = resonance
+   async update({cutoffFrequency, resonance}, updateTime) {
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       if (cutoffFrequency != null)
-      if (intensityPercent != null)
-      return false;
+         this.#filterNode.frequency.setValueAtTime(cutoffFrequency, timeToUpdate);
+      if (resonance != null)
+         this.#filterNode.Q.setValueAtTime(Math.max(resonance, 0.0001), timeToUpdate);
+      return true;
    }
 
    getInputNode() {

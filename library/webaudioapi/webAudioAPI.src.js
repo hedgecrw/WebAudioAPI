@@ -41,8 +41,8 @@ export class WebAudioAPI {
    static #instance = null;
 
    // WebAudioAPI private variable definitions
-   #audioContext = new AudioContext(); #started = false; #midiCallbacks = {};
-   #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
+   #audioContext = new AudioContext({ latencyHint: "interactive", sampleRate: 44100 });
+   #started = false; #midiCallbacks = {}; #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
 
    // Required audio nodes
@@ -342,7 +342,7 @@ export class WebAudioAPI {
    }
 
    /**
-    * Updates the intensity and parameters of a master effect at the specified time.
+    * Updates the parameters of a master effect at the specified time.
     * 
     * Calling this function will **not** affect the sequential processing order of any applied
     * effects.
@@ -352,20 +352,19 @@ export class WebAudioAPI {
     * 
     * @param {string} effectName - Name of the master effect to be updated
     * @param {Object} effectOptions - Effect-specific options (TODO)
-    * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async updateMasterEffect(effectName, effectOptions, percent, updateTime) {
+   async updateMasterEffect(effectName, effectOptions, updateTime) {
       // TODO: Verify percent within valid range, Errors.mjs
       for (const effect of this.#effects)
          if (effect.name == effectName)
-            return await effect.update(effectOptions, percent, updateTime);
+            return await effect.update(effectOptions, updateTime);
       return false;
    }
 
    /**
-    * Updates the intensity and parameters of a track-specific effect at the specified time.
+    * Updates the parameters of a track-specific effect at the specified time.
     * 
     * Calling this function will **not** affect the sequential processing order of any applied
     * effects.
@@ -376,13 +375,12 @@ export class WebAudioAPI {
     * @param {string} trackName - Name of the track for which to update the effect
     * @param {string} effectName - Name of the track effect to be updated
     * @param {Object} effectOptions - Effect-specific options (TODO)
-    * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async updateTrackEffect(trackName, effectName, effectOptions, percent, updateTime) {
+   async updateTrackEffect(trackName, effectName, effectOptions, updateTime) {
       // TODO: Verify percent within valid range, Errors.mjs
-      return (trackName in this.#tracks) ? await this.#tracks[trackName].updateEffect(effectName, effectOptions, percent, updateTime) : false;
+      return (trackName in this.#tracks) ? await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime) : false;
    }
 
    /**

@@ -44,11 +44,11 @@ export class Chorus extends EffectBase {
     * @param {string} shape - Waveform shape used to modulate the delayed chorus signal
     * @param {number} delayOffset - Number of seconds delay between the original signal and the chorus signal
     * @param {number} variableFeedback - Percentage of processed signal to be fed back into the chorus circuit
-    * @param {number} intensityPercent - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, shape, delayOffset, variableFeedback}, intensityPercent, updateTime) {
+   async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
       return false;
    }
 

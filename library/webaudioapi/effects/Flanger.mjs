@@ -43,11 +43,11 @@ export class Flanger extends EffectBase {
     * @param {string} shape - Waveform shape used to modulate the delayed flanger signal
     * @param {number} delayOffset - Number of seconds of delay between the original signal and the flanger signal
     * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
-    * @param {number} intensityPercent - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, shape, delayOffset, variableFeedback}, intensityPercent, updateTime) {
+   async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
       return false;
    }
 

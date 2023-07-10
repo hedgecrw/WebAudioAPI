@@ -42,11 +42,11 @@ export class Distortion extends EffectBase {
     * 
     * @param {number} drive - Gain level for the distorted signal
     * @param {boolean} tone - Whether to smooth distortion by adding tasty tone to it
-    * @param {number} intensityPercent - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({drive, tone}, intensityPercent, updateTime) {
+   async update({drive, tone, intensity}, updateTime) {
       return false;
    }
 

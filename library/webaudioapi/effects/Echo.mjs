@@ -41,11 +41,11 @@ export class Echo extends EffectBase {
     * changes to take effect.
     * 
     * @param {number} feedback - Amount of reflection fed back into the original sound
-    * @param {number} intensityPercent - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({feedback}, intensityPercent, updateTime) {
+   async update({feedback, intensity}, updateTime) {
       return false;
    }
 

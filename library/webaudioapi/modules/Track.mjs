@@ -113,7 +113,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    }
 
    /**
-    * Updates the intensity and parameters of a track effect at the specified time.
+    * Updates the parameters of a track effect at the specified time.
     * 
     * Calling this function will **not** affect the sequential processing order of any applied
     * effects.
@@ -123,16 +123,15 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     * 
     * @param {string} effectName - Name of the track effect to be updated
     * @param {Object} effectOptions - Effect-specific options (TODO)
-    * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     * @memberof Track
     * @instance
     */
-   async function updateEffect(effectName, effectOptions, percent, updateTime) {
+   async function updateEffect(effectName, effectOptions, updateTime) {
       for (const effect of effects)
          if (effect.name == effectName)
-            return await effect.update(effectOptions, percent, updateTime);
+            return await effect.update(effectOptions, updateTime);
       return false;
    }
 

@@ -32,7 +32,7 @@ export class Panning extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
+         { name: 'leftToRightRatio', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
       ];
    }
 
@@ -48,12 +48,12 @@ export class Panning extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} intensityPercent - Ratio of sound output from the left speaker to the right speaker as a percentage between [0.0, 1.0]
+    * @param {number} leftToRightRatio - Ratio of sound output from the left speaker to the right speaker as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({}, intensityPercent, updateTime) {
-      const panningValue = 2.0 * (intensityPercent - 0.5);
+   async update({leftToRightRatio}, updateTime) {
+      const panningValue = 2.0 * (leftToRightRatio - 0.5);
       this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
       return true;
    }

@@ -42,11 +42,10 @@ export class Equalization extends EffectBase {
     * 
     * @param {number[]} frequencyBandUpperCutoffs - Upper frequency cutoffs for each band in the equalizer
     * @param {number[]} frequencyBandVolumes - Volumes for each frequency band in the equalizer
-    * @param {number} intensityPercent - Intensity of the overall signal volume as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({frequencyBandVolumes}, intensityPercent, updateTime) {
+   async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime) {
       return false;
    }
 

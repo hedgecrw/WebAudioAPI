@@ -48,11 +48,11 @@ export class Delay extends EffectBase {
     * @param {number} time - Number of seconds between the original signal and its echo
     * @param {number} cutoffFrequencyLower - Frequency below which to block acoustic content
     * @param {number} cutoffFrequencyUpper - Frequency above which to block acoustic content
-    * @param {number} intensityPercent - Ratio of delayed-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of delayed-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper}, intensityPercent, updateTime) {
+   async update({feedback, time, cutoffFrequencyLower, cutoffFrequencyUpper, intensity}, updateTime) {
       return false;
    }
 

@@ -46,11 +46,11 @@ export class Phaser extends EffectBase {
     * @param {number} feedback - Percentage of phased signal that will be fed back into the phased audio circuit
     * @param {number} widthLower - Lowest frequency through which the bandpass filters will sweep
     * @param {number} widthUpper - Highest frequency through which the bandpass filters will sweep
-    * @param {number} intensityPercent - Ratio of phased-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of phased-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({speed, feedback, widthLower, widthUpper}, intensityPercent, updateTime) {
+   async update({speed, feedback, widthLower, widthUpper, intensity}, updateTime) {
       return false;
    }
 

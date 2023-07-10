@@ -14,6 +14,10 @@ export class BandPassFilter extends EffectBase {
    // Effect-specific private variables
    /** @type {BiquadFilterNode} */
    #filterNode;
+   /** @type {number} */
+   #lowerCutoffFrequency;
+   /** @type {number} */
+   #upperCutoffFrequency;
 
    /**
     * Constructs a new {@link BandPassFilter} effect object.
@@ -21,6 +25,8 @@ export class BandPassFilter extends EffectBase {
    constructor(audioContext) {
       super(audioContext);
       this.#filterNode = new BiquadFilterNode(audioContext, { type: 'bandpass' });
+      this.#lowerCutoffFrequency = 0.0;
+      this.#upperCutoffFrequency = 22050.0
    }
 
    /**
@@ -33,8 +39,7 @@ export class BandPassFilter extends EffectBase {
    static getParameters() {
       return [
          { name: 'lowerCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
-         { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 },
-         { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 1 }
+         { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 22050 }
       ];
    }
 
@@ -52,16 +57,19 @@ export class BandPassFilter extends EffectBase {
     * 
     * @param {number} lowerCutoffFrequency - Frequency below which audio content will be reduced
     * @param {number} upperCutoffFrequency - Frequency above which audio content will be reduced
-    * @param {number} intensityPercent - Amount of frequency exaggeration around the cutoffs as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({lowerCutoffFrequency, upperCutoffFrequency}, intensityPercent, updateTime) {
-      // intensityPercent = resonance
+   async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime) {
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       if (lowerCutoffFrequency != null)
+         this.#lowerCutoffFrequency = lowerCutoffFrequency;
       if (upperCutoffFrequency != null)
-      if (intensityPercent != null)
-      return false;
+         this.#upperCutoffFrequency = upperCutoffFrequency;
+      const centerFrequency = Math.sqrt(this.#lowerCutoffFrequency * this.#upperCutoffFrequency);
+      this.#filterNode.frequency.setValueAtTime(centerFrequency, updateTime);
+      this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), updateTime);
+      return true;
    }
 
    getInputNode() {

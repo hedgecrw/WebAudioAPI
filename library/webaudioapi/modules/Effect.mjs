@@ -51,7 +51,7 @@ const EffectClasses = {
  */
 export function getEffectParameters(effectType) {
    return EffectClasses[effectType].getParameters();
-};
+}
 
 
 /**
@@ -116,14 +116,13 @@ export async function loadEffect(audioContext, effectName, effectType) {
       parameters: EffectClasses[effectType].getParameters(),
 
       /**
-       * Updates the intensity and parameters of the effect at the specified time.
+       * Updates the parameters of the effect at the specified time.
        * 
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested
        * changes to take effect.
        * 
        * @function
        * @param {Object} effectOptions - Effect-specific options (TODO)
-       * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        * @memberof Effect

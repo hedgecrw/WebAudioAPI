@@ -23,17 +23,16 @@ export class EffectBase {
    async load() { return; }
 
    /**
-    * Updates the intensity and parameters of the effect at the specified time.
+    * Updates the parameters of the effect at the specified time.
     * 
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
     * @param {Object} effectOptions - Effect-specific options (TODO)
-    * @param {number} intensityPercent - Intensity of the effect as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update(effectOptions, intensityPercent, updateTime) { return false; }
+   async update(effectOptions, updateTime) { return false; }
    // TODO: Verify correct options within each concrete update() function, Errors.mjs
 
    /**

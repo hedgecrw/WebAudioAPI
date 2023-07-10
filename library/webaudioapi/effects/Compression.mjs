@@ -56,11 +56,11 @@ export class Compression extends EffectBase {
     * @param {number} threshold - Decibel loudness of the input signal above which the compressor kicks in between [-100.0, 0.0]
     * @param {number} attack - Number of seconds required to reduce signal gain by 10 dB between [0.0, 1.0]
     * @param {number} release - Number of seconds required to increase signal gain by 10 dB between [0.0, 1.0]
-    * @param {number} intensityPercent - Amount of compression applied as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Amount of compression applied as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({threshold, attack, release}, intensityPercent, updateTime) {
+   async update({threshold, attack, release, intensity}, updateTime) {
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       if (threshold != null)
          this.#compressorNode.threshold.setValueAtTime(threshold, timeToUpdate);
@@ -68,8 +68,8 @@ export class Compression extends EffectBase {
          this.#compressorNode.attack.setValueAtTime(attack, timeToUpdate);
       if (release != null)
          this.#compressorNode.release.setValueAtTime(release, timeToUpdate);
-      if (intensityPercent != null) {
-         const ratioValue = 1.0 + (intensityPercent * 19.0);
+      if (intensity != null) {
+         const ratioValue = 1.0 + (intensity * 19.0);
          this.#compressorNode.ratio.setValueAtTime(ratioValue, timeToUpdate);
       }
       return true;

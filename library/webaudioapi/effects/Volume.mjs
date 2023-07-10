@@ -30,7 +30,7 @@ export class Volume extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 1 }
+         { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 1 }
       ];
    }
 
@@ -46,12 +46,12 @@ export class Volume extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} intensityPercent - Intensity of the volume as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Intensity of the volume as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({}, intensityPercent, updateTime) {
-      this.#volumeNode.gain.setValueAtTime(intensityPercent, updateTime == null ? this.audioContext.currentTime : updateTime);
+   async update({intensity}, updateTime) {
+      this.#volumeNode.gain.setValueAtTime(intensity, updateTime == null ? this.audioContext.currentTime : updateTime);
       return true;
    }
 

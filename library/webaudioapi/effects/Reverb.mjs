@@ -45,11 +45,11 @@ export class Reverb extends EffectBase {
     * @param {number} decay - Number of seconds before reflections start to decay
     * @param {number} highCutoffFrequency - Frequency above which to block acoustic reverb content
     * @param {number} lowCutoffFrequency - Frequency below which to block acoustic reverb content
-    * @param {number} intensityPercent - Ratio of reverbed-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} intensity - Ratio of reverbed-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency}, intensityPercent, updateTime) {
+   async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime) {
       return false;
    }
 

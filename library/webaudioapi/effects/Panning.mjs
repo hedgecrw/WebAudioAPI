@@ -23,10 +23,24 @@ export class Panning extends EffectBase {
       this.#panningNode = new StereoPannerNode(audioContext);
    }
 
+   /**
+    * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+    * of the {@link EffectBase#update update()} function for this {@link Effect}.
+    * 
+    * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+    * @see {@link EffectParameter}
+    */
+   static getParameters() {
+      return [
+         { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
+      ];
+   }
+
    async load() {
       this.#panningNode.pan.value = 0.0;
    }
 
+   /* eslint no-empty-pattern: "off" */
    /**
     * Updates the {@link Panning} effect according to the specified parameters at the
     * specified time.
@@ -38,7 +52,7 @@ export class Panning extends EffectBase {
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({intensityPercent, updateTime}) {
+   async update({}, intensityPercent, updateTime) {
       const panningValue = 2.0 * (intensityPercent - 0.5);
       this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
       return true;

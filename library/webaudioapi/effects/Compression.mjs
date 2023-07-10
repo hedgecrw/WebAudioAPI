@@ -23,6 +23,22 @@ export class Compression extends EffectBase {
       this.#compressorNode = new DynamicsCompressorNode(audioContext);
    }
 
+   /**
+    * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+    * of the {@link EffectBase#update update()} function for this {@link Effect}.
+    * 
+    * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+    * @see {@link EffectParameter}
+    */
+   static getParameters() {
+      return [
+         { name: 'threshold', type: 'number', validValues: [-100, 0], defaultValue: -24 },
+         { name: 'attack', type: 'number', validValues: [0, 1], defaultValue: 0.003 },
+         { name: 'release', type: 'number', validValues: [0, 1], defaultValue: 0.24 },
+         { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 0 }
+      ];
+   }
+
    async load() {
       this.#compressorNode.threshold.value = -24;
       this.#compressorNode.attack.value = 0.003;
@@ -44,7 +60,7 @@ export class Compression extends EffectBase {
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({threshold, attack, release, intensityPercent, updateTime}) {
+   async update({threshold, attack, release}, intensityPercent, updateTime) {
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       if (threshold != null)
          this.#compressorNode.threshold.setValueAtTime(threshold, timeToUpdate);

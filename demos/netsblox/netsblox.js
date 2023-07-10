@@ -63,7 +63,7 @@ class EffectBlock {
       await api.applyTrackEffect(trackName, this.effectName(), this.effectType());
    }
    async runBlock(api, trackName, executionStartTime) {
-      await api.updateTrackEffect(trackName, this.effectName(), null, 0.01 * this.effectValue(), executionStartTime);
+      await api.updateTrackEffect(trackName, this.effectName(), {}, 0.01 * this.effectValue(), executionStartTime);
       return executionStartTime;
    }
 }

@@ -10,15 +10,35 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class HighPassFilter extends EffectBase {
 
+   // Effect-specific private variables
+   /** @type {BiquadFilterNode} */
+   #filterNode;
+
    /**
     * Constructs a new {@link HighPassFilter} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+      this.#filterNode = new BiquadFilterNode(audioContext, { type: 'highpass' });
+   }
+
+   /**
+    * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+    * of the {@link EffectBase#update update()} function for this {@link Effect}.
+    * 
+    * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+    * @see {@link EffectParameter}
+    */
+   static getParameters() {
+      return [
+         { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
+         { name: 'intensityPercent', type: 'number', validValues: [0.0001, 1000], defaultValue: 0.0001 }
+      ];
    }
 
    async load() {
-      return;
+      this.#filterNode.frequency.value = 0.0;
+      this.#filterNode.Q.value = 0.0001;
    }
 
    /**
@@ -33,16 +53,18 @@ export class HighPassFilter extends EffectBase {
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({cutoffFrequency, intensityPercent, updateTime}) {
+   async update({cutoffFrequency}, intensityPercent, updateTime) {
       // intensityPercent = resonance
+      if (cutoffFrequency != null)
+      if (intensityPercent != null)
       return false;
    }
 
    getInputNode() {
-      return;
+      return this.#filterNode;
    }
 
    getOutputNode() {
-      return;
+      return this.#filterNode;
    }
 }

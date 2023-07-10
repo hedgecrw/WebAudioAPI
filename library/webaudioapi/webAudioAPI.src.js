@@ -1,8 +1,8 @@
 import { Note, Duration, EffectType } from './modules/Constants.mjs';
 import { createTrack as createTrackImpl } from './modules/Track.mjs';
+import { loadEffect, getEffectParameters } from './modules/Effect.mjs';
 import { loadInstrument } from './modules/Instrument.mjs';
 import * as WebAudioApiErrors from './modules/Errors.mjs';
-import { loadEffect } from './modules/Effect.mjs';
 import { version } from '../../package.json';
 
 /**
@@ -22,6 +22,16 @@ import { version } from '../../package.json';
  * @property {number} timeSignatureNumerator - Number of beats per measure
  * @property {number} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
  * @property {number} measureLengthSeconds - Length (in seconds) of a measure
+ */
+
+/**
+ * Composite object type for holding a set of concrete {@link Effect} parameter details.
+ * 
+ * @typedef {Object} EffectParameter
+ * @property {string} name - Name of the effect parameter
+ * @property {string} type - Type of effect parameter value (either "string" or "number")
+ * @property {Array<string|number>} validValues - For "string" types, a listing of all valid values; for "number" types, the min/max values
+ * @property {string|number} defaultValue - Default effect value before any updates
  */
 
 /** Contains all WebAudioAPI top-level functionality. */
@@ -122,6 +132,25 @@ export class WebAudioAPI {
     */
    getAvailableEffects() {
       return EffectType;
+   }
+
+   /**
+    * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
+    * in the `effectOptions` parameter of the {@link WebAudioAPI#updateMasterEffect updateMasterEffect()}
+    * or the {@link WebAudioAPI#updateTrackEffect updateTrackEffect()} function.
+    * 
+    * This function can be used to enumerate available effect parameters for displaying on a
+    * web page. Note, however, that the `effectType` parameter must be the **numeric value**
+    * associated with a certain {@link module:Constants.EffectType EffectType}, not a
+    * string-based key.
+    * 
+    * @param {number} effectType - {@link module:Constants.EffectType EffectType} for which to return a parameter list
+    * @returns {EffectParameter[]} List of effect-specific parameters available for updating
+    * @see {@link module:Constants.EffectType EffectType}
+    * @see {@link EffectParameter}
+    */
+   getAvailableEffectParameters(effectType) {
+      return getEffectParameters(effectType);
    }
 
    /**

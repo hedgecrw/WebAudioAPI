@@ -11,15 +11,36 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class BandRejectFilter extends EffectBase {
 
+   // Effect-specific private variables
+   /** @type {BiquadFilterNode} */
+   #filterNode;
+
    /**
     * Constructs a new {@link BandRejectFilter} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+      this.#filterNode = new BiquadFilterNode(audioContext, { type: 'notch' });
+   }
+
+   /**
+    * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+    * of the {@link EffectBase#update update()} function for this {@link Effect}.
+    * 
+    * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+    * @see {@link EffectParameter}
+    */
+   static getParameters() {
+      return [
+         { name: 'lowerCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
+         { name: 'upperCutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
+         { name: 'intensityPercent', type: 'number', validValues: [0, 1], defaultValue: 1 }
+      ];
    }
 
    async load() {
-      return;
+      this.#filterNode.frequency.value = 11025.0;
+      this.#filterNode.Q.value = 1000.0;
    }
 
    /**
@@ -35,16 +56,19 @@ export class BandRejectFilter extends EffectBase {
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({lowerCutoffFrequency, upperCutoffFrequency, intensityPercent, updateTime}) {
+   async update({lowerCutoffFrequency, upperCutoffFrequency}, intensityPercent, updateTime) {
       // intensityPercent = resonance
+      if (lowerCutoffFrequency != null)
+      if (upperCutoffFrequency != null)
+      if (intensityPercent != null)
       return false;
    }
 
    getInputNode() {
-      return;
+      return this.#filterNode;
    }
 
    getOutputNode() {
-      return;
+      return this.#filterNode;
    }
 }

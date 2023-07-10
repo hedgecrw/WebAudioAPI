@@ -18,6 +18,17 @@ export class Echo extends EffectBase {
       super(audioContext);
    }
 
+   /**
+    * Returns a list of all available parameters for manipulation in the `effectOptions` parameter
+    * of the {@link EffectBase#update update()} function for this {@link Effect}.
+    * 
+    * @returns {EffectParameter[]} List of effect-specific parameters for use in the effect's {@link EffectBase#update update()} function
+    * @see {@link EffectParameter}
+    */
+   static getParameters() {
+      return [];
+   }
+
    async load() {
       return;
    }
@@ -34,7 +45,7 @@ export class Echo extends EffectBase {
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({feedback, intensityPercent, updateTime}) {
+   async update({feedback}, intensityPercent, updateTime) {
       return false;
    }
 

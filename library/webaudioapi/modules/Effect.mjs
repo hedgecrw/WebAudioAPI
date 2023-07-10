@@ -38,6 +38,23 @@ const EffectClasses = {
 
 
 /**
+ * Returns a list of effect-specific {@link EffectParameter EffectParameters} for manipulation
+ * in the corresponding {@link module:Constants.EffectType EffectType}.
+ * 
+ * Note that the `effectType` parameter must be the **numeric value** associated with a certain
+ * {@link module:Constants.EffectType EffectType}, not a string-based key.
+ * 
+ * @param {number} effectType - {@link module:Constants.EffectType EffectType} for which to return a parameter list
+ * @returns {EffectParameter[]} List of effect-specific parameters available for updating
+ * @see {@link module:Constants.EffectType EffectType}
+ * @see {@link EffectParameter}
+ */
+export function getEffectParameters(effectType) {
+   return EffectClasses[effectType].getParameters();
+};
+
+
+/**
  * Loads a pre-defined {@link Effect} capable of being applied to an individual {@link Track} or
  * to the aggregate output of all tracks.
  * 
@@ -56,27 +73,6 @@ export async function loadEffect(audioContext, effectName, effectType) {
    const effect = new EffectClasses[effectType](audioContext);
    await effect.load();
 
-   /**
-    * Updates the intensity and parameters of the effect at the specified time.
-    * 
-    * Note that the `updateTime` parameter can be omitted to immediately cause the requested
-    * changes to take effect.
-    * 
-    * @param {Object} effectOptions - Effect-specific options (TODO)
-    * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
-    * @param {number} [updateTime] - Global API time at which to update the effect
-    * @returns {Promise<boolean>} Whether the effect update was successfully applied
-    * @memberof Effect
-    * @instance
-    */
-   async function update(effectOptions, percent, updateTime) {
-      if (!effectOptions)
-         effectOptions = {};
-      effectOptions['intensityPercent'] = percent;
-      effectOptions['updateTime'] = updateTime;
-      return await effect.update(effectOptions);
-   }
-
    // Returns an object containing functions and attributes within the public Effect namespace
    return {
       /**
@@ -87,7 +83,7 @@ export async function loadEffect(audioContext, effectName, effectType) {
       name: effectName,
    
       /**
-       * Numeric value corresponding to the {@link module:Constants.EffectType EffectType} of the {@link Effect}
+       * Numeric value corresponding to the {@link module:Constants.EffectType EffectType} of the {@link Effect}.
        * @memberof Effect
        * @instance
        */
@@ -110,6 +106,30 @@ export async function loadEffect(audioContext, effectName, effectType) {
        * @instance
        */
       output: effect.getOutputNode(),
-      update
+
+      /**
+       * List of effect-specific {@link EffectParameter EffectParameters} for manipulation in the
+       * `effectOptions` parameter of the {@link Effect#update update()} function.
+       * @memberof Effect
+       * @instance
+       */
+      parameters: EffectClasses[effectType].getParameters(),
+
+      /**
+       * Updates the intensity and parameters of the effect at the specified time.
+       * 
+       * Note that the `updateTime` parameter can be omitted to immediately cause the requested
+       * changes to take effect.
+       * 
+       * @function
+       * @param {Object} effectOptions - Effect-specific options (TODO)
+       * @param {number} percent - Intensity of the effect as a percentage between [0.0, 1.0]
+       * @param {number} [updateTime] - Global API time at which to update the effect
+       * @returns {Promise<boolean>} Whether the effect update was successfully applied
+       * @memberof Effect
+       * @instance
+       * @async
+       */
+      update: effect.update.bind(effect)
    };
 }

@@ -26,7 +26,7 @@ export class BandPassFilter extends EffectBase {
       super(audioContext);
       this.#filterNode = new BiquadFilterNode(audioContext, { type: 'bandpass' });
       this.#lowerCutoffFrequency = 0.0;
-      this.#upperCutoffFrequency = 22050.0
+      this.#upperCutoffFrequency = 22050.0;
    }
 
    /**
@@ -66,9 +66,9 @@ export class BandPassFilter extends EffectBase {
          this.#lowerCutoffFrequency = lowerCutoffFrequency;
       if (upperCutoffFrequency != null)
          this.#upperCutoffFrequency = upperCutoffFrequency;
-      const centerFrequency = Math.sqrt(this.#lowerCutoffFrequency * this.#upperCutoffFrequency);
-      this.#filterNode.frequency.setValueAtTime(centerFrequency, updateTime);
-      this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), updateTime);
+      const centerFrequency = this.#lowerCutoffFrequency + (0.5 * (this.#upperCutoffFrequency - this.#lowerCutoffFrequency));
+      this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
+      this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate);
       return true;
    }
 

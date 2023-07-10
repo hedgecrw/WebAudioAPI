@@ -41,7 +41,7 @@ export class WebAudioAPI {
    static #instance = null;
 
    // WebAudioAPI private variable definitions
-   #audioContext = new AudioContext({ latencyHint: "interactive", sampleRate: 44100 });
+   #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
    #started = false; #midiCallbacks = {}; #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
 
@@ -195,7 +195,7 @@ export class WebAudioAPI {
                midiDevices.push(midiDevice.name);
          } catch (err) {
             this.#midiDeviceAccess = null;
-            throw WebAudioApiErrors.MidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
+            throw WebAudioApiErrors.WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
          }
       }
       return midiDevices;

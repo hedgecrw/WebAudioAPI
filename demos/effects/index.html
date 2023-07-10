@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>WebAudioAPI Effects Demo</title>
+    <link rel="stylesheet" href="effectsdemo.css">
+    <script type="module" src="js/webAudioAPI.js"></script>
+    <script src="js/effectsdemo.js"></script>
+  </head>
+
+  <body>
+
+    <div class="controls">
+      <div id="playButton" class="button" onclick="play()">Play</div>
+      <div id="stopButton" class="button disabled" onclick="stop()">Stop</div>
+    </div>
+
+    <div class="controls">
+      <label for="effectSelector">Active Effect:&nbsp;</label>
+      <select name="effectSelector" id="effectSelector" onchange="changeEffect(this.value)"></select>
+    </div>
+
+    <table id="effectOptions" class="effectOptions"></table>
+
+  </body>
+
+</html>

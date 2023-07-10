@@ -4,9 +4,16 @@
  * @module Errors
  */
 
-export class MidiError extends Error {
+export class WebAudioMidiError extends Error {
    constructor(message) {
       super(message);
-      this.name = 'MidiError';
+      this.name = 'WebAudioMidiError';
+   }
+}
+
+export class WebAudioEffectError extends Error {
+   constructor(message) {
+      super(message);
+      this.name = 'WebAudioEffectError';
    }
 }

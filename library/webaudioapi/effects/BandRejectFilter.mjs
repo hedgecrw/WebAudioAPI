@@ -26,7 +26,7 @@ export class BandRejectFilter extends EffectBase {
       super(audioContext);
       this.#filterNode = new BiquadFilterNode(audioContext, { type: 'notch' });
       this.#lowerCutoffFrequency = 0.0;
-      this.#upperCutoffFrequency = 0.0
+      this.#upperCutoffFrequency = 0.0;
    }
 
    /**
@@ -66,9 +66,9 @@ export class BandRejectFilter extends EffectBase {
          this.#lowerCutoffFrequency = lowerCutoffFrequency;
       if (upperCutoffFrequency != null)
          this.#upperCutoffFrequency = upperCutoffFrequency;
-      const centerFrequency = Math.sqrt(this.#lowerCutoffFrequency * this.#upperCutoffFrequency);
-      this.#filterNode.frequency.setValueAtTime(centerFrequency, updateTime);
-      this.#filterNode.Q.setValueAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, updateTime);
+      const centerFrequency = this.#lowerCutoffFrequency + (0.5 * (this.#upperCutoffFrequency - this.#lowerCutoffFrequency));
+      this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
+      this.#filterNode.Q.setValueAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate);
       return true;
    }
 

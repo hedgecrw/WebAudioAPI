@@ -26,7 +26,7 @@ function changeEffect(effectType) {
          optionSelection.max = effectOption.validValues[1];
          optionSelection.step = 0.001;
          optionSelection.value = effectOption.defaultValue;
-         optionSelection.addEventListener('change', changeParameter);
+         optionSelection.addEventListener('input', changeParameter);
          const minValueLabel = document.createElement('span'), maxValueLabel = document.createElement('span');
          minValueLabel.className = 'right';
          minValueLabel.innerHTML = effectOption.validValues[0] + '&nbsp;';

@@ -25,7 +25,7 @@ export class BandPassFilter extends EffectBase {
    constructor(audioContext) {
       super(audioContext);
       this.#filterNode = new BiquadFilterNode(audioContext, { type: 'bandpass' });
-      this.#lowerCutoffFrequency = 0.0;
+      this.#lowerCutoffFrequency = 1.0;
       this.#upperCutoffFrequency = 22050.0;
    }
 
@@ -38,7 +38,7 @@ export class BandPassFilter extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 0 },
+         { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
          { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 22050 }
       ];
    }

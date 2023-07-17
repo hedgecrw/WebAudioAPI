@@ -42,6 +42,12 @@
             "rules": {
                 "no-unused-vars": "off"
             }
+        },
+        {
+            "files": ["EncoderBase.mjs"],
+            "rules": {
+                "no-unused-vars": "off"
+            }
         }
     ]
 }

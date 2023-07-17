@@ -29,7 +29,7 @@ import { loadEffect } from './Effect.mjs';
 export function createTrack(name, audioContext, tempo, trackAudioSink) {
 
    // Track-local variable definitions
-   let instrument = null, midiDevice = null;
+   let instrument = null, midiDevice = null, audioDeviceInput = null;
    const audioSources = [], asyncAudioSources = [], effects = [];
    const audioSink = new GainNode(audioContext);
    audioSink.connect(trackAudioSink);
@@ -433,8 +433,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
        * @memberof MidiClip
        * @instance
        * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
-       * @see {@link module:Constants.Encodi
-       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}ngType EncodingType}
+       * @see {@link module:Constants.EncodingType EncodingType}
        */
       async function save(fileType) {
          let dataBlob = null;
@@ -497,6 +496,19 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    }
 
    /**
+    * Disconnects the current track from the specified audio input device so that no further audio
+    * events will be received.
+    * 
+    * @memberof Track
+    * @instance
+    */
+   function disconnectFromAudioInputDevice() {
+      if (audioDeviceInput != null)
+         audioDeviceInput.disconnect();
+      audioDeviceInput = null;
+   }
+
+   /**
     * Connects the current track to the specified MIDI device so that any incoming events will be
     * automatically played in real-time.
     * 
@@ -511,6 +523,26 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       midiInput.addEventListener('midimessage', midiEventReceived);
       midiDevice = midiInput;
       return true;
+   }
+
+   /**
+    * Connects the current track to the specified audio input device so that any incoming audio
+    * will be automatically played in real-time.
+    * 
+    * @param {string} audioDeviceID - ID of the audio input device to which to connect the current track
+    * @returns {boolean}  Whether connection to the audio input device was successful
+    * @memberof Track
+    * @instance
+    */
+   async function connectToAudioInputDevice(audioDeviceID) {
+      disconnectFromAudioInputDevice();
+      try {
+         const audioStream = await navigator.mediaDevices.getUserMedia({ audio: {'deviceId': audioDeviceID}, video: false });
+         audioDeviceInput = audioContext.createMediaStreamSource(audioStream);
+         audioDeviceInput.connect(audioSink);
+         return true;
+      }
+      catch (err) { return false; }
    }
 
    /**
@@ -540,6 +572,6 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       name,
       updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync,
       playNote, playClip, playFile, playMidiClip, recordMidiClip, connectToMidiDevice, disconnectFromMidiDevice,
-      deleteTrack
+      connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack
    };
 }

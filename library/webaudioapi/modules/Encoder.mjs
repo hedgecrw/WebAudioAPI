@@ -10,7 +10,6 @@
  */
 
 import { EncodingType } from './Constants.mjs';
-import { EncoderBase } from '../encoders/EncoderBase.mjs';
 import { WavFileEncoder } from '../encoders/WavFileEncoder.mjs';
 
 const EncoderClasses = {

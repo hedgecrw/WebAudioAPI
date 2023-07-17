@@ -37,8 +37,8 @@ Javascript library to generate music using the Web Audio API
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
  - [ ] For all effects, add parameter to allow effect to slowly take effect (setTargetAtTime)
 
- - [ ] Enumerate input/output devices, choose device to use for AudioContext or for recording
- - [ ] Create async recordClip(startTime, duration) to record to AudioBuffer (either can be null)
+ - [ ] Choose device to use for audio output (instead of default speakers)
+ - [ ] Create async recordClip(startTime, duration) to record from input device to AudioBuffer (either can be null)
  - [ ] Create exportClip(clip, format, samplingRate) to export an AudioBuffer to a file
  - [ ] Create startAndExport() to mimic start() on AudioContext, except that it also streams to an AudioBuffer until stop() is called
  - [ ] Create export() to mimic start(), except that exporting is done as quickly as possible and nothing comes out of speakers (requires knowing when to stop???)

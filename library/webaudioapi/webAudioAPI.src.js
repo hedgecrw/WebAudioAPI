@@ -56,6 +56,8 @@ export class WebAudioAPI {
    // Required audio nodes
    /** @type {(null|MIDIAccess)} */
    #midiDeviceAccess = null;
+   /** @type {Object.<string, string>} */
+   #audioInputDevices = {};
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
    /** @type {GainNode} */
@@ -195,7 +197,7 @@ export class WebAudioAPI {
     * @returns {Promise<string[]>} Listing of all available MIDI devices connected to the client device
     */
    async getAvailableMidiDevices() {
-      let midiDevices = [];
+      const midiDevices = [];
       if (navigator.requestMIDIAccess && this.#midiDeviceAccess === null) {
          try {
             this.#midiDeviceAccess = await navigator.requestMIDIAccess();
@@ -203,10 +205,51 @@ export class WebAudioAPI {
                midiDevices.push(midiDevice.name);
          } catch (err) {
             this.#midiDeviceAccess = null;
-            throw WebAudioApiErrors.WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
+            throw new WebAudioApiErrors.WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
          }
       }
       return midiDevices;
+   }
+
+   /**
+    * Returns a listing of the available audio input devices connected to the client device.
+    * 
+    * Individual results from this function call can be passed directly to the
+    * {@link connectAudioInputDeviceToTrack()} function to attach an input device to a specified
+    * audio track.
+    * 
+    * @returns {Promise<string[]>} Listing of all available audio input devices connected to the client
+    */
+   async getAvailableAudioInputDevices() {
+      const inputDevices = [];
+      for (const key in this.#audioInputDevices)
+         delete this.#audioInputDevices[key];
+      if (navigator.mediaDevices?.enumerateDevices) {
+         try {
+            await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+            for (const device of await navigator.mediaDevices.enumerateDevices())
+               if (device.kind == 'audioinput') {
+                  let alreadyFound = false;
+                  for (let existingDevice of inputDevices) {
+                     if (existingDevice.groupId == device.groupId) {
+                        if (device.deviceId.length > existingDevice.id.length) {
+                           existingDevice.deviceId = device.deviceId;
+                           existingDevice.label = device.label;
+                        }
+                        alreadyFound = true;
+                        break;
+                     }
+                  }
+                  if (!alreadyFound)
+                     inputDevices.push({ id: device.deviceId, groupId: device.groupId, label: device.label });
+               }
+            } catch (err) {
+               throw new WebAudioApiErrors.WebAudioDeviceError('Microphone and audio input permissions are required in order to enumerate available devices!');
+            }
+      }
+      for (const device of inputDevices)
+         this.#audioInputDevices[device.label] = device.id;
+      return Object.keys(this.#audioInputDevices);
    }
 
    /**
@@ -490,13 +533,39 @@ export class WebAudioAPI {
    }
 
    /**
+    * Connects an audio input device to the specified audio track.
+    * 
+    * **Note:** A single audio input device can be connected to multiple audio tracks, but an
+    * audio track can only be connected to a single audio input device.
+    * 
+    * @param {string} trackName - Name of the track to which to connect the audio input device
+    * @param {string} audioInputDeviceName - Name of the audio input device to connect to the track
+    * @returns {Promise<boolean>} Whether connecting the audio input device to the track was successful
+    */
+   async connectAudioInputDeviceToTrack(trackName, audioInputDeviceName) {
+      if (audioInputDeviceName in this.#audioInputDevices && trackName in this.#tracks)
+         return await this.#tracks[trackName].connectToAudioInputDevice(this.#audioInputDevices[audioInputDeviceName]);
+      return false;
+   }
+
+   /**
     * Disconnects all MIDI devices from the specified audio track.
     * 
-    * @param {string} trackName - Name of the track from which to disconnect the MIDI device
+    * @param {string} trackName - Name of the track from which to disconnect the MIDI devices
     */
    async disconnectMidiDeviceFromTrack(trackName) {
       if (trackName in this.#tracks)
          this.#tracks[trackName].disconnectFromMidiDevice();
+   }
+
+   /**
+    * Disconnects all audio input devices from the specified audio track.
+    * 
+    * @param {string} trackName - Name of the track from which to disconnect the audio input devices
+    */
+   async disconnectAudioInputDeviceFromTrack(trackName) {
+      if (trackName in this.#tracks)
+         this.#tracks[trackName].disconnectFromAudioInputDevice();
    }
 
    /**

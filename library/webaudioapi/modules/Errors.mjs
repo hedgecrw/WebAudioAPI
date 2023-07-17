@@ -11,6 +11,13 @@ export class WebAudioMidiError extends Error {
    }
 }
 
+export class WebAudioDeviceError extends Error {
+   constructor(message) {
+      super(message);
+      this.name = 'WebAudioDeviceError';
+   }
+}
+
 export class WebAudioEffectError extends Error {
    constructor(message) {
       super(message);

@@ -10,6 +10,7 @@
  */
 
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
+import { getEncoderFor } from './Encoder.mjs';
 import { loadEffect } from './Effect.mjs';
 
 /**
@@ -248,16 +249,17 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
-    * @param {ArrayBuffer} buffer - Buffer containing raw, audio-encoded data
+    * @param {ArrayBuffer|Blob} buffer - Buffer containing raw, audio-encoded data
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number|null} [duration] -  Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
     * @memberof Track
     * @instance
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
     */
    async function playClip(buffer, startTime, duration) {
-      const audioBuffer = await audioContext.decodeAudioData(buffer);
+      const audioBuffer = await audioContext.decodeAudioData(buffer instanceof ArrayBuffer ? buffer : await buffer.arrayBuffer());
       const clipSource = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
       audioSources.push(clipSource);
       if (duration) {
@@ -273,6 +275,193 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
          clipSource.start(startTime);
       }
       return (duration && (duration < audioBuffer.duration)) ? duration : audioBuffer.duration;
+   }
+
+   /**
+    * Schedules a MIDI clip to be played on the current track for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+    * play to completion.
+    * 
+    * @param {MidiClip} midiClip - {@link MidiClip} object to be played
+    * @param {number} startTime - Global API time at which to start playing the clip
+    * @param {number|null} [duration] - Number of seconds for which to continue playing the clip
+    * @returns {Promise<number>} Duration (in seconds) of the MIDI clip being played
+    * @memberof Track
+    * @instance
+    * @see {@link MidiClip}
+    */
+   function playMidiClip(midiClip, startTime, duration) {
+      const unmatchedNotes = {};
+      for (const [noteTime, midiData] of midiClip.getData())
+         if (noteTime < duration) {
+            const command = getMidiCommand(midiData), note = getMidiNote(midiData);
+            if ((command === MidiCommand.NoteOn) && (getMidiVelocity(midiData) > 0))
+               unmatchedNotes[note] = [ noteTime, getMidiVelocity(midiData) ];
+            else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
+               const noteDuration = ((noteTime <= duration) ? noteTime : duration) - unmatchedNotes[note][0];
+               playNote(note, unmatchedNotes[note][1], startTime + unmatchedNotes[note][0], noteDuration);
+               delete unmatchedNotes[note];
+            }
+         }
+      const expectedDuration = (duration && (duration < midiClip.getDuration())) ? duration : midiClip.getDuration();
+      return instrument ? expectedDuration : 0;
+   }
+
+   /**
+    * Schedules a MIDI clip to be recorded on the current track for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+    * continue to record until manually stopped by the {@link MidiClip#finalize finalize()}
+    * function on the returned {@link MidiClip} object.
+    * 
+    * Note that the recorded MIDI clip will **not** include any effects that might exist on
+    * the track. This is so that recording and then immediately playing back on the same track
+    * will not cause any underlying effects to be doubled.
+    * 
+    * @param {number} startTime - Global API time at which to start recording the MIDI clip
+    * @param {number|null} [duration] - Number of seconds for which to continue recording the MIDI clip
+    * @returns {MidiClip} Reference to a {@link MidiClip} object representing the MIDI data to be recorded
+    * @memberof Track
+    * @instance
+    * @see {@link MidiClip}
+    */
+   function recordMidiClip(startTime, duration) {
+
+      /**
+       * Object containing all data needed to store and playback a MIDI audio clip.
+       * @namespace MidiClip
+       * @global
+       */
+
+      // MIDI clip-local variable definitions
+      const thisMidiDevice = midiDevice, midiLog = {}, noteSources = [];
+      let recordedDuration = null, completionCallback = null;
+
+      // Ensure that a MIDI device is currently connected to this track
+      if (!thisMidiDevice)
+         return null;
+
+      // Private MIDI handling functions
+      function midiEventToRecord(event) {
+         if ((audioContext.currentTime >= startTime) && (!duration || (audioContext.currentTime < startTime + duration)))
+            midiLog[audioContext.currentTime - startTime] = event.data;
+      }
+
+      function playNoteOffline(offlineContext, note, velocity, startTime, duration) {
+         const noteSource = instrument.getNote(note);
+         const noteVolume = new GainNode(offlineContext);
+         noteSource.connect(noteVolume).connect(offlineContext.destination);
+         noteVolume.gain.setValueAtTime(velocity, 0.0);
+         noteVolume.gain.setTargetAtTime(0.0, startTime + duration - 0.03, 0.03);
+         noteSource.start(startTime);
+         noteSource.stop(startTime + duration);
+         noteSources.push(noteSource);
+      }
+
+      /**
+       * Returns a dictionary of all MIDI event data within the {@link MidiClip}, stored according
+       * to the relative times (in seconds) that they were received.
+       * 
+       * @returns {Object} Dictionary containing MIDI event data stored according to their relative reception times
+       * @memberof MidiClip
+       * @instance
+       */
+      function getData() {
+         return recordedDuration ? midiLog : null;
+      }
+
+      /**
+       * Returns the total duration of the MIDI clip in seconds.
+       * 
+       * @returns {number} Duration of the MIDI clip in seconds.
+       * @memberof MidiClip
+       * @instance
+       */
+      function getDuration() {
+         return recordedDuration;
+      }
+
+      /**
+       * Stops recording any future MIDI data within the {@link MidiClip}, finalizes the internal
+       * storage of all recorded data, and calls the user-completion notification callback, if
+       * registered.
+       * 
+       * Note that this function is called automatically if the original call to
+       * {@link Track#recordMidiClip recordMidiClip()} specified a concrete duration for the clip.
+       * If no duration was specified, then this function **must** be called in order to stop
+       * recording. A {@link MidiClip} is unable to be used or played back until this function
+       * has been called.
+       * 
+       * @memberof MidiClip
+       * @instance
+       */
+      function finalize() {
+         if (!recordedDuration) {
+            recordedDuration = duration ? duration : (audioContext.currentTime - startTime);
+            thisMidiDevice.removeEventListener('midimessage', midiEventToRecord);
+            if (completionCallback)
+               completionCallback(this);
+            completionCallback = null;
+         }
+      }
+
+      /**
+       * Allows a user to register a callback for notification when all MIDI recording activities
+       * have been completed for this {@link MidiClip}. This corresponds to the time when the
+       * {@link MidiClip#finalize finalize()} function gets called, either manually or
+       * automatically.
+       * 
+       * A user-defined notification callback will be called with a single parameter which is a
+       * reference to this {@link MidiClip}.
+       * 
+       * @param {RecordCompleteCallback} notificationCallback - Callback to fire when recording of this clip has completed
+       * @memberof MidiClip
+       * @instance
+       */
+      function notifyWhenComplete(notificationCallback) {
+         if (!recordedDuration)
+            completionCallback = notificationCallback;
+      }
+
+      /**
+       * Encodes this {@link MidiClip} according to the {@link module:Constants.EncodingType EncodingType}
+       * specified in the `fileType` parameter.
+       * 
+       * @param {EncodingType} fileType - Numeric value corresponding to the desired file {@link module:Constants.EncodingType EncodingType}
+       * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio
+       * @memberof MidiClip
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+       * @see {@link module:Constants.Encodi
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}ngType EncodingType}
+       */
+      async function save(fileType) {
+         let dataBlob = null;
+         if (recordedDuration && instrument) {
+            const unmatchedNotes = {}, offlineContext = new OfflineAudioContext(1, 44100 * duration, 44100);
+            for (const [startTime, midiData] of midiLog) {
+               const command = getMidiCommand(midiData), note = getMidiNote(midiData);
+               if ((command === MidiCommand.NoteOn) && (getMidiVelocity(midiData) > 0))
+                  unmatchedNotes[note] = [ startTime, getMidiVelocity(midiData) ];
+               else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
+                  playNoteOffline(offlineContext, note, unmatchedNotes[note][1], unmatchedNotes[note][0], startTime - unmatchedNotes[note][0]);
+                  delete unmatchedNotes[note];
+               }
+            }
+            dataBlob = getEncoderFor(fileType).encode(await offlineContext.startRendering());
+            noteSources.splice(0, noteSources.length);
+         }
+         return dataBlob;
+      }
+
+      // Begin listening for all incoming MIDI events and optionally set a timer to stop listening
+      thisMidiDevice.addEventListener('midimessage', midiEventToRecord);
+      if (duration)
+         setTimeout(finalize, startTime + duration - audioContext.currentTime);
+
+      // Returns an object containing functions and attributes within the MidiClip namespace
+      return { getData, getDuration, finalize, save, notifyWhenComplete };
    }
 
    /**
@@ -349,7 +538,8 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
        * @instance
        */
       name,
-      updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync,
-      playNoteAsync, playNote, playClip, playFile, connectToMidiDevice, disconnectFromMidiDevice, deleteTrack
+      updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync,
+      playNote, playClip, playFile, playMidiClip, recordMidiClip, connectToMidiDevice, disconnectFromMidiDevice,
+      deleteTrack
    };
 }

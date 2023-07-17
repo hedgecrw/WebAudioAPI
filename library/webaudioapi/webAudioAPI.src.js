@@ -14,6 +14,14 @@ import { version } from '../../package.json';
  */
 
 /**
+ * Required function prototype to use when registering a recording completion callback.
+ * 
+ * @callback RecordCompleteCallback
+ * @param {MidiClip} midiClip - Instance of the fully recorded MIDI clip
+ * @see {@link MidiClip}
+ */
+
+/**
  * Composite object type for holding all tempo-related information.
  * 
  * @typedef {Object} Tempo
@@ -522,14 +530,32 @@ export class WebAudioAPI {
     * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the clip
-    * @param {ArrayBuffer} buffer - Buffer containing raw, audio-encoded data
+    * @param {ArrayBuffer|Blob} buffer - Buffer containing raw, audio-encoded data
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number|null} [duration] - Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
     */
    async playClip(trackName, buffer, startTime, duration) {
       return (trackName in this.#tracks) ? await this.#tracks[trackName].playClip(buffer, startTime, duration) : 0;
+   }
+
+   /**
+    * Schedules a MIDI clip to be played on a specific track for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+    * play to completion.
+    * 
+    * @param {string} trackName - Name of the track on which to play the clip
+    * @param {MidiClip} midiClip - {@link MidiClip} object to be played
+    * @param {number} startTime - Global API time at which to start playing the clip
+    * @param {number|null} [duration] - Number of seconds for which to continue playing the clip
+    * @returns {Promise<number>} Duration (in seconds) of the MIDI clip being played
+    * @see {@link MidiClip}
+    */
+   playMidiClip(trackName, midiClip, startTime, duration) {
+      return (trackName in this.#tracks) ? this.#tracks[trackName].playMidiClip(midiClip, startTime, duration) : 0;
    }
 
    /**
@@ -577,6 +603,27 @@ export class WebAudioAPI {
    async stopNote(trackName, note) {
       if (trackName in this.#tracks)
          this.#tracks[trackName].stopNoteAsync(note);
+   }
+
+   /**
+    * Schedules a MIDI clip to be recorded on a specific track for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+    * continue to record until manually stopped by the {@link MidiClip#finalize finalize()}
+    * function on the returned {@link MidiClip} object.
+    * 
+    * Note that the recorded MIDI clip will **not** include any effects that might exist on
+    * the target track. This is so that recording on an effect-modified track and then
+    * immediately playing back on the same track will not cause the effects to be doubled.
+    * 
+    * @param {string} trackName - Name of the track on which to record the MIDI clip
+    * @param {number} startTime - Global API time at which to start recording the MIDI clip
+    * @param {number|null} [duration] - Number of seconds for which to continue recording the MIDI clip
+    * @returns {MidiClip} Reference to a {@link MidiClip} object representing the MIDI data to be recorded
+    * @see {@link MidiClip}
+    */
+   recordMidiClip(trackName, startTime, duration) {
+      return (trackName in this.#tracks) ? this.#tracks[trackName].recordMidiClip(startTime, duration) : 0;
    }
 
    /**

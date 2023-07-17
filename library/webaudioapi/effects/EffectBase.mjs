@@ -1,4 +1,4 @@
-/** Class representing all base-level WebAudioAPI effects */
+/** Class representing all base-level {@link WebAudioAPI} effects */
 export class EffectBase {
 
    // Reference to the stored global AudioContext

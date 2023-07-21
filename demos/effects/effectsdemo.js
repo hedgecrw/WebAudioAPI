@@ -36,14 +36,18 @@ function changeEffect(effectType) {
          valueContainer.appendChild(maxValueLabel);
       }
       else {
+         const preSpan = document.createElement('span'), postSpan = document.createElement('span');
+         preSpan.innerHTML = '&nbsp;'; postSpan.innerHTML = '&nbsp;';
          const optionSelection = document.createElement('select');
          optionSelection.id = effectOption.name;
          optionSelection.name = effectOption.name;
-         for (const value in effectOption.validValues)
+         for (const value of effectOption.validValues)
             optionSelection.add(new Option(value, value));
          optionSelection.value = effectOption.defaultValue;
          optionSelection.addEventListener('change', changeParameter);
+         valueContainer.appendChild(preSpan);
          valueContainer.appendChild(optionSelection);
+         valueContainer.appendChild(postSpan);
       }
    }
    if (window.playing) {

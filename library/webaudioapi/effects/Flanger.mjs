@@ -80,7 +80,7 @@ export class Flanger extends EffectBase {
     * changes to take effect.
     * 
     * @param {number} rate - Frequency at which an oscillator modulates the delayed flanger signal
-    * @param {string} shape - Waveform shape used to modulate the delayed chorus signal
+    * @param {string} shape - Waveform shape used to modulate the delayed flanger signal
     * @param {number} delayOffset - Number of seconds of delay between the original signal and the flanger signal
     * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
     * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]

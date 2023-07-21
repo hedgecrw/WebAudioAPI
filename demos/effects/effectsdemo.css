@@ -2,7 +2,7 @@ label {
   margin: auto 2px auto 6px;
 }
 
-input {
+input, td > select {
   width: 300px;
 }
 

@@ -68,6 +68,8 @@ export class WebAudioAPI {
    #midiDeviceAccess = null;
    /** @type {Object.<string, string>} */
    #audioInputDevices = {};
+   /** @type {Object.<string, string>} */
+   #audioOutputDevices = {};
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
    /** @type {GainNode} */
@@ -255,11 +257,11 @@ export class WebAudioAPI {
             for (const device of await navigator.mediaDevices.enumerateDevices())
                if (device.kind == 'audioinput') {
                   let alreadyFound = false;
-                  for (let existingDevice of inputDevices) {
+                  for (const [i, existingDevice] of inputDevices.entries()) {
                      if (existingDevice.groupId == device.groupId) {
                         if (device.deviceId.length > existingDevice.id.length) {
-                           existingDevice.deviceId = device.deviceId;
-                           existingDevice.label = device.label;
+                           inputDevices[i].id = device.deviceId;
+                           inputDevices[i].label = device.label;
                         }
                         alreadyFound = true;
                         break;
@@ -274,6 +276,45 @@ export class WebAudioAPI {
       }
       inputDevices.forEach(device => this.#audioInputDevices[device.label] = device.id);
       return Object.keys(this.#audioInputDevices);
+   }
+
+   /**
+    * Returns a listing of the available audio output devices connected to the client device.
+    * 
+    * Individual results from this function call can be passed directly to the
+    * {@link selectAudioOutputDevice()} function to choose where to direct all audio output.
+    * 
+    * @returns {Promise<string[]>} Listing of all available audio output devices connected to the client
+    */
+   async getAvailableAudioOutputDevices() {
+      const outputDevices = [];
+      for (const key in this.#audioOutputDevices)
+         delete this.#audioOutputDevices[key];
+      if (navigator.mediaDevices?.enumerateDevices) {
+         try {
+            await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+            for (const device of await navigator.mediaDevices.enumerateDevices())
+               if (device.kind == 'audiooutput') {
+                  let alreadyFound = false;
+                  for (const [i, existingDevice] of outputDevices.entries()) {
+                     if (existingDevice.groupId == device.groupId) {
+                        if (device.deviceId.length > existingDevice.id.length) {
+                           outputDevices[i].id = device.deviceId;
+                           outputDevices[i].label = device.label;
+                        }
+                        alreadyFound = true;
+                        break;
+                     }
+                  }
+                  if (!alreadyFound)
+                     outputDevices.push({ id: device.deviceId, groupId: device.groupId, label: device.label });
+               }
+         } catch (err) {
+            throw new WebAudioApiErrors.WebAudioDeviceError('Audio permissions are required in order to enumerate available devices!');
+         }
+      }
+      outputDevices.forEach(device => this.#audioOutputDevices[device.label] = device.id);
+      return Object.keys(this.#audioOutputDevices);
    }
 
    /**
@@ -543,6 +584,17 @@ export class WebAudioAPI {
          midiObject.device.removeEventListener('midimessage', midiObject.callback);
          delete this.#midiCallbacks[midiDeviceName];
       }
+   }
+
+   /**
+    * Redirects all audio output to the specified device.
+    * 
+    * @param {string} audioOutputDeviceName - Name of the output device to which to direct all audio
+    */
+   async selectAudioOutputDevice(audioOutputDeviceName) {
+      if (!(audioOutputDeviceName in this.#audioOutputDevices))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target audio output device (${audioOutputDeviceName}) does not exist`);
+      await this.#audioContext.setSinkId(this.#audioOutputDevices[audioOutputDeviceName]);
    }
 
    /**

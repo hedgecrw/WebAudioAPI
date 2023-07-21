@@ -3,7 +3,7 @@ DEMO_DIR              := $(BUILD_DIR)/demos
 DOCS_DIR              := $(BUILD_DIR)/docs
 LIB_DIR               := $(BUILD_DIR)/lib
 
-DEMO_TARGETS          := netsblox piano score midi effects
+DEMO_TARGETS          := netsblox piano score external effects
 TOOL_TARGETS          := instrumentcreator
 
 .PHONY : all clean lib assets docs demos $(DEMO_TARGETS) $(TOOL_TARGETS) run

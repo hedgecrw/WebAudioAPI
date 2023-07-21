@@ -3,10 +3,10 @@
 
   <head>
     <meta charset="utf-8">
-    <title>Live MIDI Device Demo</title>
-    <link rel="stylesheet" href="mididemo.css">
+    <title>Live External Device Demo</title>
+    <link rel="stylesheet" href="externaldemo.css">
     <script type="module" src="js/webAudioAPI.js"></script>
-    <script src="js/mididemo.js"></script>
+    <script src="js/externaldemo.js"></script>
   </head>
 
   <body>
@@ -28,6 +28,11 @@
     <div class="choice">
       <label for="input">Audio Input Device:&nbsp;</label>
       <select name="input" id="input" onchange="changeAudioInputDevice()"></select>
+    </div>
+
+    <div class="choice">
+      <label for="output">Audio Output Device:&nbsp;</label>
+      <select name="output" id="output" onchange="changeAudioOutputDevice()"></select>
     </div>
 
     <p>&nbsp;</p>

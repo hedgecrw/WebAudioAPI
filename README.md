@@ -14,7 +14,7 @@ Javascript library to generate music using the Web Audio API
  - Live piano demo: https://hedgecrw.github.io/WebAudioAPI/piano
  - Score creation demo: https://hedgecrw.github.io/WebAudioAPI/score
  - NetsBlox emulation demo: https://hedgecrw.github.io/WebAudioAPI/netsblox
- - MIDI device demo: https://hedgecrw.github.io/WebAudioAPI/midi
+ - Live external device demo: https://hedgecrw.github.io/WebAudioAPI/external
  - Effects manipulation demo: https://hedgecrw.github.io/WebAudioAPI/effects
 
 ## Tools

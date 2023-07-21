@@ -22,6 +22,16 @@ function changeAudioInputDevice() {
       window.audioAPI.disconnectAudioInputDeviceFromTrack('defaultTrack');
 }
 
+function changeAudioOutputDevice() {
+   const deviceSelector = document.getElementById('output');
+   const deviceSelection = deviceSelector.options[deviceSelector.selectedIndex].value;
+   window.audioAPI.selectAudioOutputDevice(deviceSelection).then(() => {
+      document.getElementById("status").textContent = 'Connected';
+      document.getElementById("status").style.color = 'black';
+      console.log('Connected to audio output device!');
+   });
+}
+
 function changeInstrument() {
    const instrumentSelector = document.getElementById('instrument');
    const instrumentSelection = instrumentSelector.options[instrumentSelector.selectedIndex].value;
@@ -139,13 +149,15 @@ window.onload = () => {
    window.midiClip = window.audioClip = null;
    window.audioAPI = new WebAudioAPI();
    window.audioAPI.createTrack('defaultTrack');
-   const deviceSelector = document.getElementById('device');
-   deviceSelector.add(new Option('Choose a MIDI device'));
+   const midiDeviceSelector = document.getElementById('device');
+   midiDeviceSelector.add(new Option('Choose a MIDI device'));
    const instrumentSelector = document.getElementById('instrument');
    instrumentSelector.add(new Option('Choose an instrument'));
    const inputSelector = document.getElementById('input');
    inputSelector.add(new Option('Choose an audio input device'));
+   const outputSelector = document.getElementById('output');
    window.audioAPI.getAvailableInstruments('../instruments').then(instruments => instruments.forEach(instrument => instrumentSelector.add(new Option(instrument))));
-   window.audioAPI.getAvailableMidiDevices().then(devices => devices.forEach(device => deviceSelector.add(new Option(device))));
+   window.audioAPI.getAvailableMidiDevices().then(devices => devices.forEach(device => midiDeviceSelector.add(new Option(device))));
    window.audioAPI.getAvailableAudioInputDevices().then(devices => devices.forEach(device => inputSelector.add(new Option(device))));
+   window.audioAPI.getAvailableAudioOutputDevices().then(devices => devices.forEach(device => outputSelector.add(new Option(device))));
 };

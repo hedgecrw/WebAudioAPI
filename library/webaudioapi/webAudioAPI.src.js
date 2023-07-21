@@ -1,4 +1,4 @@
-import { Note, Duration, EffectType } from './modules/Constants.mjs';
+import { Note, Duration, EffectType, EncodingType } from './modules/Constants.mjs';
 import { createTrack as createTrackImpl } from './modules/Track.mjs';
 import { loadEffect, getEffectParameters } from './modules/Effect.mjs';
 import { loadInstrument } from './modules/Instrument.mjs';
@@ -11,6 +11,15 @@ import { version } from '../../package.json';
  * @callback MidiEventCallback
  * @param {MIDIMessageEvent} event - Object containing the detected MIDI event
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/MIDIMessageEvent MIDIMessageEvent}
+ */
+
+/**
+ * Required function prototype to use when registering a recording completion callback.
+ * 
+ * @callback RecordCompleteCallback
+ * @param {MidiClip|AudioClip} clip - Instance of the fully recorded clip
+ * @see {@link AudioClip}
+ * @see {@link MidiClip}
  */
 
 /**
@@ -41,13 +50,26 @@ export class WebAudioAPI {
    static #instance = null;
 
    // WebAudioAPI private variable definitions
+   #started = false;
    #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
-   #started = false; #midiCallbacks = {}; #tracks = {}; #effects = []; #instrumentListing = {}; #loadedInstruments = {};
+   /** @type {Object.<string, Object>} */
+   #midiCallbacks = {};
+   /** @type {Object.<string, Track>} */
+   #tracks = {};
+   /** @type {Array<Effect>} */
+   #effects = [];
+   /** @type {Object.<string, string>} */
+   #instrumentListing = {};
+   /** @type {Object.<string, Instrument>} */
+   #loadedInstruments = {};
+   /** @type {Tempo} */
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
-
-   // Required audio nodes
-   /** @type {(null|MIDIAccess)} */
+   /** @type {MIDIAccess|null} */
    #midiDeviceAccess = null;
+   /** @type {Object.<string, string>} */
+   #audioInputDevices = {};
+   /** @type {Object.<string, string>} */
+   #audioOutputDevices = {};
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
    /** @type {GainNode} */
@@ -150,7 +172,22 @@ export class WebAudioAPI {
     * @see {@link EffectParameter}
     */
    getAvailableEffectParameters(effectType) {
+      if (!Object.values(EffectType).includes(Number(effectType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
       return getEffectParameters(effectType);
+   }
+
+   /**
+    * Returns a listing of all available encoders in the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available encoding options for displaying on a
+    * web page.
+    * 
+    * @returns {Object.<string, number>} Listing of all available encoding types in the {@link WebAudioAPI} library
+    * @see {@link module:Constants.EncodingType EncodingType}
+    */
+   getAvailableEncoders() {
+      return EncodingType;
    }
 
    /**
@@ -187,7 +224,7 @@ export class WebAudioAPI {
     * @returns {Promise<string[]>} Listing of all available MIDI devices connected to the client device
     */
    async getAvailableMidiDevices() {
-      let midiDevices = [];
+      const midiDevices = [];
       if (navigator.requestMIDIAccess && this.#midiDeviceAccess === null) {
          try {
             this.#midiDeviceAccess = await navigator.requestMIDIAccess();
@@ -195,10 +232,89 @@ export class WebAudioAPI {
                midiDevices.push(midiDevice.name);
          } catch (err) {
             this.#midiDeviceAccess = null;
-            throw WebAudioApiErrors.WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
+            throw new WebAudioApiErrors.WebAudioMidiError('MIDI permissions are required in order to enumerate available MIDI devices!');
          }
       }
       return midiDevices;
+   }
+
+   /**
+    * Returns a listing of the available audio input devices connected to the client device.
+    * 
+    * Individual results from this function call can be passed directly to the
+    * {@link connectAudioInputDeviceToTrack()} function to attach an input device to a specified
+    * audio track.
+    * 
+    * @returns {Promise<string[]>} Listing of all available audio input devices connected to the client
+    */
+   async getAvailableAudioInputDevices() {
+      const inputDevices = [];
+      for (const key in this.#audioInputDevices)
+         delete this.#audioInputDevices[key];
+      if (navigator.mediaDevices?.enumerateDevices) {
+         try {
+            await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+            for (const device of await navigator.mediaDevices.enumerateDevices())
+               if (device.kind == 'audioinput') {
+                  let alreadyFound = false;
+                  for (const [i, existingDevice] of inputDevices.entries()) {
+                     if (existingDevice.groupId == device.groupId) {
+                        if (device.deviceId.length > existingDevice.id.length) {
+                           inputDevices[i].id = device.deviceId;
+                           inputDevices[i].label = device.label;
+                        }
+                        alreadyFound = true;
+                        break;
+                     }
+                  }
+                  if (!alreadyFound)
+                     inputDevices.push({ id: device.deviceId, groupId: device.groupId, label: device.label });
+               }
+         } catch (err) {
+            throw new WebAudioApiErrors.WebAudioDeviceError('Microphone and audio input permissions are required in order to enumerate available devices!');
+         }
+      }
+      inputDevices.forEach(device => this.#audioInputDevices[device.label] = device.id);
+      return Object.keys(this.#audioInputDevices);
+   }
+
+   /**
+    * Returns a listing of the available audio output devices connected to the client device.
+    * 
+    * Individual results from this function call can be passed directly to the
+    * {@link selectAudioOutputDevice()} function to choose where to direct all audio output.
+    * 
+    * @returns {Promise<string[]>} Listing of all available audio output devices connected to the client
+    */
+   async getAvailableAudioOutputDevices() {
+      const outputDevices = [];
+      for (const key in this.#audioOutputDevices)
+         delete this.#audioOutputDevices[key];
+      if (navigator.mediaDevices?.enumerateDevices) {
+         try {
+            await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+            for (const device of await navigator.mediaDevices.enumerateDevices())
+               if (device.kind == 'audiooutput') {
+                  let alreadyFound = false;
+                  for (const [i, existingDevice] of outputDevices.entries()) {
+                     if (existingDevice.groupId == device.groupId) {
+                        if (device.deviceId.length > existingDevice.id.length) {
+                           outputDevices[i].id = device.deviceId;
+                           outputDevices[i].label = device.label;
+                        }
+                        alreadyFound = true;
+                        break;
+                     }
+                  }
+                  if (!alreadyFound)
+                     outputDevices.push({ id: device.deviceId, groupId: device.groupId, label: device.label });
+               }
+         } catch (err) {
+            throw new WebAudioApiErrors.WebAudioDeviceError('Audio permissions are required in order to enumerate available devices!');
+         }
+      }
+      outputDevices.forEach(device => this.#audioOutputDevices[device.label] = device.id);
+      return Object.keys(this.#audioOutputDevices);
    }
 
    /**
@@ -243,11 +359,13 @@ export class WebAudioAPI {
     * @param {string} instrumentName - Name of the instrument to assign to the track
     */
    async updateInstrument(trackName, instrumentName) {
-      if (trackName in this.#tracks && instrumentName in this.#instrumentListing) {
-         if (!(instrumentName in this.#loadedInstruments))
-            this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
-         this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
-      }
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if (!(instrumentName in this.#instrumentListing))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target instrument name (${instrumentName}) does not exist`);
+      if (!(instrumentName in this.#loadedInstruments))
+         this.#loadedInstruments[instrumentName] = await loadInstrument(this.#audioContext, instrumentName, this.#instrumentListing[instrumentName]);
+      this.#tracks[trackName].updateInstrument(this.#loadedInstruments[instrumentName]);
    }
 
    /**
@@ -256,8 +374,9 @@ export class WebAudioAPI {
     * @param {string} trackName - Name of the track from which to remove the current instrument
     */
    async removeInstrument(trackName) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].removeInstrument();
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      this.#tracks[trackName].removeInstrument();
    }
 
    /**
@@ -268,16 +387,16 @@ export class WebAudioAPI {
     * 
     * Any parameter may be set to `null` to keep it unchanged between consecutive function calls.
     * 
-    * @param {(number|null)} beatBase - Note {@link module:Constants.Duration Duration} corresponding to a global beat
-    * @param {(number|null)} beatsPerMinute - Number of global beats per minute
-    * @param {(number|null)} timeSignatureNumerator - Number of beats per measure
-    * @param {(number|null)} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
+    * @param {number|null} beatBase - Note {@link module:Constants.Duration Duration} corresponding to a global beat
+    * @param {number|null} beatsPerMinute - Number of global beats per minute
+    * @param {number|null} timeSignatureNumerator - Number of beats per measure
+    * @param {number|null} timeSignatureDenominator - Note {@link module:Constants.Duration Duration} corresponding to a measure beat
     */
    updateTempo(beatBase, beatsPerMinute, timeSignatureNumerator, timeSignatureDenominator) {
-      this.#tempo.beatBase = beatBase ? beatBase : this.#tempo.beatBase;
-      this.#tempo.beatsPerMinute = beatsPerMinute ? beatsPerMinute : this.#tempo.beatsPerMinute;
-      this.#tempo.timeSignatureNumerator = timeSignatureNumerator ? timeSignatureNumerator : this.#tempo.timeSignatureNumerator;
-      this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? timeSignatureDenominator : this.#tempo.timeSignatureDenominator;
+      this.#tempo.beatBase = beatBase ? Number(beatBase) : this.#tempo.beatBase;
+      this.#tempo.beatsPerMinute = beatsPerMinute ? Number(beatsPerMinute) : this.#tempo.beatsPerMinute;
+      this.#tempo.timeSignatureNumerator = timeSignatureNumerator ? Number(timeSignatureNumerator) : this.#tempo.timeSignatureNumerator;
+      this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? Number(timeSignatureDenominator) : this.#tempo.timeSignatureDenominator;
       this.#tempo.measureLengthSeconds = (60.0 / this.#tempo.beatsPerMinute) * this.#tempo.beatBase * this.#tempo.timeSignatureNumerator / this.#tempo.timeSignatureDenominator;
    }
 
@@ -301,8 +420,10 @@ export class WebAudioAPI {
     * @see {@link module:Constants.EffectType EffectType}
     */
    async applyMasterEffect(effectName, effectType) {
+      if (!Object.values(EffectType).includes(Number(effectType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
       const existingEffect = await this.removeMasterEffect(effectName);
-      const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, effectType);
+      const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, Number(effectType));
       newEffect.output.connect(this.#compressorNode);
       if (this.#effects.length) {
          const previousEffect = this.#effects.slice(-1)[0];
@@ -337,8 +458,11 @@ export class WebAudioAPI {
     * @see {@link module:Constants.EffectType EffectType}
     */
    async applyTrackEffect(trackName, effectName, effectType) {
-      if (trackName in this.#tracks)
-         await this.#tracks[trackName].applyEffect(effectName, effectType);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if (!Object.values(EffectType).includes(Number(effectType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
+      await this.#tracks[trackName].applyEffect(effectName, Number(effectType));
    }
 
    /**
@@ -351,16 +475,16 @@ export class WebAudioAPI {
     * changes to take effect.
     * 
     * @param {string} effectName - Name of the master effect to be updated
-    * @param {Object} effectOptions - Effect-specific options (TODO)
+    * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
     * @param {number} [updateTime] - Global API time at which to update the effect
-    * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async updateMasterEffect(effectName, effectOptions, updateTime) {
-      // TODO: Verify percent within valid range, Errors.mjs
       for (const effect of this.#effects)
-         if (effect.name == effectName)
-            return await effect.update(effectOptions, updateTime);
-      return false;
+         if (effect.name == effectName) {
+            await effect.update(effectOptions, updateTime ? Number(updateTime) : undefined);
+            return;
+         }
+      throw new WebAudioApiErrors.WebAudioTargetError(`The target master effect (${effectName}) does not exist`);
    }
 
    /**
@@ -374,13 +498,13 @@ export class WebAudioAPI {
     * 
     * @param {string} trackName - Name of the track for which to update the effect
     * @param {string} effectName - Name of the track effect to be updated
-    * @param {Object} effectOptions - Effect-specific options (TODO)
+    * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
     * @param {number} [updateTime] - Global API time at which to update the effect
-    * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async updateTrackEffect(trackName, effectName, effectOptions, updateTime) {
-      // TODO: Verify percent within valid range, Errors.mjs
-      return (trackName in this.#tracks) ? await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime) : false;
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined);
    }
 
    /**
@@ -417,8 +541,9 @@ export class WebAudioAPI {
     * @param {string} effectName - Name of the track effect to be removed
     */
    async removeTrackEffect(trackName, effectName) {
-      if (trackName in this.#tracks)
-         await this.#tracks[trackName].removeEffect(effectName);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      await this.#tracks[trackName].removeEffect(effectName);
    }
 
    /**
@@ -433,19 +558,18 @@ export class WebAudioAPI {
     * 
     * @param {string} midiDeviceName - Name of the MIDI device for which to receive events
     * @param {MidiEventCallback} midiEventCallback - Callback to fire when a MIDI event is received
-    * @returns {boolean} Whether the event callback registration was successful
     */
    registerMidiDeviceCallback(midiDeviceName, midiEventCallback) {
       this.deregisterMidiDeviceCallback(midiDeviceName);
-      if (this.#midiDeviceAccess) {
-         for (const midiDevice of this.#midiDeviceAccess.inputs.values())
-            if (midiDeviceName == midiDevice.name) {
-               midiDevice.addEventListener('midimessage', midiEventCallback);
-               this.#midiCallbacks[midiDeviceName] = { device: midiDevice, callback: midiEventCallback };
-               return true;
-            }
-      }
-      return false;
+      if (!this.#midiDeviceAccess)
+         throw new WebAudioApiErrors.WebAudioMidiError('MIDI access permissions have not yet been granted...first call getAvailableMidiDevices()');
+      for (const midiDevice of this.#midiDeviceAccess.inputs.values())
+         if (midiDeviceName == midiDevice.name) {
+            midiDevice.addEventListener('midimessage', midiEventCallback);
+            this.#midiCallbacks[midiDeviceName] = { device: midiDevice, callback: midiEventCallback };
+            return;
+         }
+      throw new WebAudioApiErrors.WebAudioTargetError(`The target MIDI device (${midiDeviceName}) could not be located`);
    }
 
    /**
@@ -463,6 +587,17 @@ export class WebAudioAPI {
    }
 
    /**
+    * Redirects all audio output to the specified device.
+    * 
+    * @param {string} audioOutputDeviceName - Name of the output device to which to direct all audio
+    */
+   async selectAudioOutputDevice(audioOutputDeviceName) {
+      if (!(audioOutputDeviceName in this.#audioOutputDevices))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target audio output device (${audioOutputDeviceName}) does not exist`);
+      await this.#audioContext.setSinkId(this.#audioOutputDevices[audioOutputDeviceName]);
+   }
+
+   /**
     * Connects a MIDI device to the specified audio track.
     * 
     * **Note:** A single MIDI device can be connected to multiple audio tracks, but an audio track
@@ -470,25 +605,57 @@ export class WebAudioAPI {
     * 
     * @param {string} trackName - Name of the track to which to connect the MIDI device
     * @param {string} midiDeviceName - Name of the MIDI device to connect to the track
-    * @returns {Promise<boolean>} Whether connecting the MIDI device to the track was successful
     */
    async connectMidiDeviceToTrack(trackName, midiDeviceName) {
-      if (this.#midiDeviceAccess && trackName in this.#tracks) {
-         for (const midiDevice of this.#midiDeviceAccess.inputs.values())
-            if (midiDeviceName == midiDevice.name)
-               return this.#tracks[trackName].connectToMidiDevice(midiDevice);
-      }
-      return false;
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if (!this.#midiDeviceAccess)
+         throw new WebAudioApiErrors.WebAudioMidiError('MIDI access permissions have not yet been granted...first call getAvailableMidiDevices()');
+      for (const midiDevice of this.#midiDeviceAccess.inputs.values())
+         if (midiDeviceName == midiDevice.name) {
+            this.#tracks[trackName].connectToMidiDevice(midiDevice);
+            return;
+         }
+      throw new WebAudioApiErrors.WebAudioTargetError(`The target MIDI device (${midiDeviceName}) could not be located`);
+   }
+
+   /**
+    * Connects an audio input device to the specified audio track.
+    * 
+    * **Note:** A single audio input device can be connected to multiple audio tracks, but an
+    * audio track can only be connected to a single audio input device.
+    * 
+    * @param {string} trackName - Name of the track to which to connect the audio input device
+    * @param {string} audioInputDeviceName - Name of the audio input device to connect to the track
+    */
+   async connectAudioInputDeviceToTrack(trackName, audioInputDeviceName) {
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if (!(audioInputDeviceName in this.#audioInputDevices))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target audio input device (${audioInputDeviceName}) does not exist`);
+      await this.#tracks[trackName].connectToAudioInputDevice(this.#audioInputDevices[audioInputDeviceName]);
    }
 
    /**
     * Disconnects all MIDI devices from the specified audio track.
     * 
-    * @param {string} trackName - Name of the track from which to disconnect the MIDI device
+    * @param {string} trackName - Name of the track from which to disconnect the MIDI devices
     */
    async disconnectMidiDeviceFromTrack(trackName) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].disconnectFromMidiDevice();
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      this.#tracks[trackName].disconnectFromMidiDevice();
+   }
+
+   /**
+    * Disconnects all audio input devices from the specified audio track.
+    * 
+    * @param {string} trackName - Name of the track from which to disconnect the audio input devices
+    */
+   async disconnectAudioInputDeviceFromTrack(trackName) {
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      this.#tracks[trackName].disconnectFromAudioInputDevice();
    }
 
    /**
@@ -511,25 +678,38 @@ export class WebAudioAPI {
     * @see {@link module:Constants.Duration Duration}
     */
    async playNote(trackName, note, startTime, duration, velocity=0.75) {
-      // TODO: Verify velocity within valid range, Errors.mjs
-      return (trackName in this.#tracks) ? await this.#tracks[trackName].playNote(note, velocity, startTime, duration) : 0;
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
+         throw new WebAudioApiErrors.WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
+      return await this.#tracks[trackName].playNote(Number(note), Number(velocity), Number(startTime), Number(duration));
    }
 
    /**
     * Schedules an audio clip to be played on a specific track for some duration of time.
     * 
+    * The format of the audio clip in the `audioClip` parameter may be a data buffer containing
+    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, or
+    * a {@link MidiClip} or {@link AudioClip} that was recorded using this library.
+    * 
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the clip
-    * @param {ArrayBuffer} buffer - Buffer containing raw, audio-encoded data
+    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
-    * @param {number|null} [duration] - Number of seconds for which to continue playing the clip
+    * @param {number} [duration] - Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    * @see {@link MidiClip}
     */
-   async playClip(trackName, buffer, startTime, duration) {
-      return (trackName in this.#tracks) ? await this.#tracks[trackName].playClip(buffer, startTime, duration) : 0;
+   async playClip(trackName, audioClip, startTime, duration) {
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
+         throw new WebAudioApiErrors.WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, Blob, MidiClip, AudioClip) and cannot be played');
+      return await this.#tracks[trackName].playClip(audioClip, Number(startTime), duration ? Number(duration) : undefined);
    }
 
    /**
@@ -541,11 +721,13 @@ export class WebAudioAPI {
     * @param {string} trackName - Name of the track on which to play the file
     * @param {string} fileURL - URL location pointing to an audio file
     * @param {string} startTime - Global API time at which to start playing the file
-    * @param {number|null} [duration] - Number of seconds for which to continue playing the file
+    * @param {number} [duration] - Number of seconds for which to continue playing the file
     * @returns {Promise<number>} Duration (in seconds) of the file being played
     */
    async playFile(trackName, fileURL, startTime, duration) {
-      return (trackName in this.#tracks) ? await this.#tracks[trackName].playFile(fileURL, startTime, duration) : 0;
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      return await this.#tracks[trackName].playFile(fileURL, Number(startTime), duration ? Number(duration) : undefined);
    }
 
    /**
@@ -562,8 +744,11 @@ export class WebAudioAPI {
     * @see {@link module:Constants.Note Note}
     */
    async startNote(trackName, note, velocity=0.75) {
-      // TODO: Verify velocity within valid range, Errors.mjs
-      return (trackName in this.#tracks) ? await this.#tracks[trackName].playNoteAsync(note, velocity) : {};
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
+         throw new WebAudioApiErrors.WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
+      return await this.#tracks[trackName].playNoteAsync(note, Number(velocity));
    }
 
    /**
@@ -575,8 +760,55 @@ export class WebAudioAPI {
     * @param {Object} note - Reference to an active note that was started using {@link WebAudioAPI#startNote startNote()}
     */
    async stopNote(trackName, note) {
-      if (trackName in this.#tracks)
-         this.#tracks[trackName].stopNoteAsync(note);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      this.#tracks[trackName].stopNoteAsync(note);
+   }
+
+   /**
+    * Schedules an audio clip to be recorded on a specific track for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the audio clip will
+    * continue to record until manually stopped by the {@link AudioClip#finalize finalize()}
+    * function on the returned {@link AudioClip} object.
+    * 
+    * Note that the recorded audio clip will **not** include any effects that might exist on
+    * the target track. This is so that recording on an effect-modified track and then
+    * immediately playing back on the same track will not cause the effects to be doubled.
+    * 
+    * @param {string} trackName - Name of the track on which to record the audio clip
+    * @param {number} startTime - Global API time at which to start recording the audio clip
+    * @param {number} [duration] - Number of seconds for which to continue recording the audio clip
+    * @returns {AudioClip} Reference to an {@link AudioClip} object representing the audio data to be recorded
+    * @see {@link AudioClip}
+    */
+   recordAudioClip(trackName, startTime, duration) {
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      return this.#tracks[trackName].recordAudioClip(Number(startTime), duration ? Number(duration) : undefined);
+   }
+
+   /**
+    * Schedules a MIDI clip to be recorded on a specific track for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the MIDI clip will
+    * continue to record until manually stopped by the {@link MidiClip#finalize finalize()}
+    * function on the returned {@link MidiClip} object.
+    * 
+    * Note that the recorded MIDI clip will **not** include any effects that might exist on
+    * the target track. This is so that recording on an effect-modified track and then
+    * immediately playing back on the same track will not cause the effects to be doubled.
+    * 
+    * @param {string} trackName - Name of the track on which to record the MIDI clip
+    * @param {number} startTime - Global API time at which to start recording the MIDI clip
+    * @param {number} [duration] - Number of seconds for which to continue recording the MIDI clip
+    * @returns {MidiClip} Reference to a {@link MidiClip} object representing the MIDI data to be recorded
+    * @see {@link MidiClip}
+    */
+   recordMidiClip(trackName, startTime, duration) {
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      return this.#tracks[trackName].recordMidiClip(Number(startTime), duration ? Number(duration) : undefined);
    }
 
    /**

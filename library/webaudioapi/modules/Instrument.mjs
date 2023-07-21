@@ -110,7 +110,20 @@ export async function loadInstrument(audioContext, name, url) {
        * @instance
        * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
        */
-      getNote: null
+      getNote: null,
+
+      /**
+       * Returns an {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       * that can be used to play back the specified MIDI `note` from an {@link OfflineAudioContext}.
+       * 
+       * @function
+       * @param {OfflineAudioContext} - Offline audio context whicih will be used to play back the note
+       * @param {number} note - MIDI note number for which to generate a playable note
+       * @memberof Instrument
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioScheduledSourceNode AudioScheduledSourceNode}
+       */
+      getNoteOffline: null
    };
 
    // Actually load and return the instrment
@@ -119,11 +132,17 @@ export async function loadInstrument(audioContext, name, url) {
       instrumentInstance.getNote = function (note) {
          return new OscillatorNode(audioContext, { frequency: Frequency[note] });
       };
+      instrumentInstance.getNoteOffline = function (offlineContext, note) {
+         return new OscillatorNode(offlineContext, { frequency: Frequency[note] });
+      };
    }
    else {
       const noteData = await loadInstrument(url);
       instrumentInstance.getNote = function (note) {
          return new AudioBufferSourceNode(audioContext, noteData[note]);
+      };
+      instrumentInstance.getNoteOffline = function (offlineContext, note) {
+         return new AudioBufferSourceNode(offlineContext, noteData[note]);
       };
    }
    return instrumentInstance;

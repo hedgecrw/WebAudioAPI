@@ -20,7 +20,8 @@ function addClipOptions(clipElement, clips) {
 function addEffectOptions(effectElement) {
    const effects = window.audioAPI.getAvailableEffects();
    for (const effect in effects)
-      effectElement.add(new Option(effect, effects[effect]));
+      if ((effect == 'Volume') || (effect == 'Panning'))
+         effectElement.add(new Option(effect, effects[effect]));
 }
 
 function addNoteOptions(noteElement) {
@@ -221,17 +222,17 @@ window.onload = () => {
    document.getElementById('piano_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Piano'); });
    document.getElementById('guitar_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Guitar'); });
    document.getElementById('drums_enabled').addEventListener('change', () => { window.netsbloxEmulator.removeScript('Drums'); });
-   document.getElementById('master_volume').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Volume', {}, 0.01 * e.target.value); });
-   document.getElementById('master_panning').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Panning', {}, 0.01 * e.target.value); });
+   document.getElementById('master_volume').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Volume', { intensity: 0.01 * e.target.value }); });
+   document.getElementById('master_panning').addEventListener('input', (e) => { window.audioAPI.updateMasterEffect('Panning', { leftToRightRatio: 0.01 * e.target.value }); });
    document.getElementById('master_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateMasterEffect('Reverb', {}, 0.01 * e.target.value); });
-   document.getElementById('piano_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Volume', {}, 0.01 * e.target.value); });
-   document.getElementById('piano_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Panning', {}, 0.01 * e.target.value); });
+   document.getElementById('piano_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Volume', { intensity: 0.01 * e.target.value }); });
+   document.getElementById('piano_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Piano', 'Panning', { leftToRightRatio: 0.01 * e.target.value }); });
    document.getElementById('piano_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateTrackEffect('Piano', 'Reverb', {}, 0.01 * e.target.value); });
-   document.getElementById('guitar_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Volume', {}, 0.01 * e.target.value); });
-   document.getElementById('guitar_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Panning', {}, 0.01 * e.target.value); });
+   document.getElementById('guitar_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Volume', { intensity: 0.01 * e.target.value }); });
+   document.getElementById('guitar_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Guitar', 'Panning', { leftToRightRatio: 0.01 * e.target.value }); });
    document.getElementById('guitar_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateTrackEffect('Guitar', 'Reverb', {}, 0.01 * e.target.value); });
-   document.getElementById('drums_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Volume', {}, 0.01 * e.target.value); });
-   document.getElementById('drums_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Panning', {}, 0.01 * e.target.value); });
+   document.getElementById('drums_volume').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Volume', { intensity: 0.01 * e.target.value }); });
+   document.getElementById('drums_panning').addEventListener('input', (e) => { window.audioAPI.updateTrackEffect('Drums', 'Panning', { leftToRightRatio: 0.01 * e.target.value }); });
    document.getElementById('drums_reverb').addEventListener('input', (e) => { console.log(e); });//window.audioAPI.updateTrackEffect('Drums', 'Reverb', {}, 0.01 * e.target.value); });
    timeSigNumerator.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });
    timeSigDenominator.addEventListener('change', () => { window.audioAPI.updateTempo(bpmBase.value, bpm.value, timeSigNumerator.value, timeSigDenominator.value); });

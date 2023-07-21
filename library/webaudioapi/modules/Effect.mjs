@@ -122,7 +122,7 @@ export async function loadEffect(audioContext, effectName, effectType) {
        * changes to take effect.
        * 
        * @function
-       * @param {Object} effectOptions - Effect-specific options (TODO)
+       * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
        * @param {number} [updateTime] - Global API time at which to update the effect
        * @returns {Promise<boolean>} Whether the effect update was successfully applied
        * @memberof Effect

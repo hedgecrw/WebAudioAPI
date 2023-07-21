@@ -1,3 +1,4 @@
+import * as WebAudioApiErrors from '../modules/Errors.mjs';
 import { EffectBase } from './EffectBase.mjs';
 
 /**
@@ -51,6 +52,8 @@ export class Volume extends EffectBase {
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async update({intensity}, updateTime) {
+      if (intensity == null)
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
       this.#volumeNode.gain.setValueAtTime(intensity, updateTime == null ? this.audioContext.currentTime : updateTime);
       return true;
    }

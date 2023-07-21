@@ -1,3 +1,4 @@
+import * as WebAudioApiErrors from '../modules/Errors.mjs';
 import { EffectBase } from './EffectBase.mjs';
 
 /**

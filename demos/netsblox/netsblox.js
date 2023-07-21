@@ -63,7 +63,12 @@ class EffectBlock {
       await api.applyTrackEffect(trackName, this.effectName(), this.effectType());
    }
    async runBlock(api, trackName, executionStartTime) {
-      await api.updateTrackEffect(trackName, this.effectName(), {}, 0.01 * this.effectValue(), executionStartTime);
+      let parameterKey = 'value';
+      if ((this.effectName() == 'Volume') || (this.effectName() == 'Reverb'))
+         parameterKey = 'intensity';
+      else if (this.effectName() == 'Panning')
+         parameterKey = 'leftToRightRatio';
+      await api.updateTrackEffect(trackName, this.effectName(), { [parameterKey]: 0.01 * this.effectValue() }, executionStartTime);
       return executionStartTime;
    }
 }

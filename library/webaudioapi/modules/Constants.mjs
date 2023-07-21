@@ -89,12 +89,17 @@ export const Duration = {
  * @constant {Object.<string, number>}
  */
 export const EffectType = {
-   Panning: 31, Volume: 41, Compression: 42, LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54, Tremolo: 22, Vibrato: 23, Echo: 13, Flanger: 24, Chorus: 21,
-};
-/*export const EffectType = {
    Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
    Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
    Panning: 31, Equalization: 32,                                                   // Spectral Effects
    Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects
    LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54  // Filter Effects
-};*/
+};
+
+/**
+ * Object representing a mapping between an encoding file type and its unique internal code.
+ * @constant {Object.<string, number>}
+ */
+export const EncodingType = {
+   WAV: 1
+};

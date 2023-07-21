@@ -89,7 +89,7 @@ export const Duration = {
  * @constant {Object.<string, number>}
  */
 export const EffectType = {
-   Panning: 31, Volume: 41, Compression: 42, LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54
+   Panning: 31, Volume: 41, Compression: 42, LowPassFilter: 51, HighPassFilter: 52, BandPassFilter: 53, BandRejectFilter: 54, Tremolo: 22, Vibrato: 23, Echo: 13, Flanger: 24, Chorus: 21,
 };
 /*export const EffectType = {
    Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects

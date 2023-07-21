@@ -47,3 +47,5 @@ run :
 
 clean :
 	rm -rf $(BUILD_DIR)
+
+test : clean demos run

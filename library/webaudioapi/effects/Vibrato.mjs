@@ -24,8 +24,8 @@ export class Vibrato extends EffectBase {
    constructor(audioContext) {
       super(audioContext);
       this.#delay = new DelayNode(audioContext, {delayTime: 1, maxDelayTime: 10});
-      this.#lfo = new OscillatorNode(audioContext, {frequency: 0});
-      this.#gain = new GainNode(audioContext);
+      this.#lfo = new OscillatorNode(audioContext, {frequency: 5});
+      this.#gain = new GainNode(audioContext, {gain: 0});
       this.#lfo.connect(this.#gain).connect(this.#delay.delayTime);
       this.#lfo.start();
    }
@@ -39,9 +39,8 @@ export class Vibrato extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'rate', type: 'number', validValues: [0, 20], defaultValue: 0 }, 
+         { name: 'rate', type: 'number', validValues: [0, 8], defaultValue: 5 }, 
          { name: 'depth', type: 'number', validValues: [0, 0.1], defaultValue: 0 }, 
-
       ];
    }
 
@@ -64,8 +63,8 @@ export class Vibrato extends EffectBase {
    async update({rate, depth}, updateTime) {
       if (rate != null)
          this.#lfo.frequency.value = rate;
-      if (depth != null)
-         this.#gain.value = depth / (2 * Math.PI * rate)
+      if (depth != null) 
+         this.#gain.gain.value = (depth / (2 * Math.PI * this.#lfo.frequency.value));
       return true;
    }
 

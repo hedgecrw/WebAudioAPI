@@ -202,9 +202,8 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       if (!instrument)
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
       const noteSource = instrument.getNote(note); // TODO: Method to getNoteContinuous so it loops
-      const noteVolume = new GainNode(audioContext);
+      const noteVolume = new GainNode(audioContext, { gain: velocity });
       noteSource.connect(noteVolume).connect(audioSink);
-      noteVolume.gain.setValueAtTime(velocity, 0.0);
       const noteStorage = createAsyncNote(note, noteSource, noteVolume);
       noteSource.onended = stopNoteAsync.bind(this, noteStorage); // TODO: Don't need this if continuous instrument
       asyncAudioSources.push(noteStorage);
@@ -233,14 +232,12 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
       const durationSeconds = (duration < 0) ? -duration : (60.0 / ((duration / tempo.beatBase) * tempo.beatsPerMinute));
       const noteSource = instrument.getNote(note);
-      const noteVolume = new GainNode(audioContext);
+      const noteVolume = new GainNode(audioContext, { gain: velocity });
       noteSource.connect(noteVolume).connect(audioSink);
-      noteVolume.gain.setValueAtTime(velocity, 0.0);
-      noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds - 0.03, 0.03);
+      noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds, 0.03);
       noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
       audioSources.push(noteSource);
-      noteSource.start(startTime);
-      noteSource.stop(startTime + durationSeconds);
+      noteSource.start(startTime, 0, durationSeconds + 0.200);
       return durationSeconds;
    }
 
@@ -269,9 +266,9 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
          if (duration) {
             const clipVolume = new GainNode(audioContext);
             clipSource.connect(clipVolume).connect(audioSink);
-            clipVolume.gain.setTargetAtTime(0.0, startTime + duration - 0.03, 0.03);
+            clipVolume.gain.setTargetAtTime(0.0, startTime + duration, 0.03);
             clipSource.onended = sourceEnded.bind(this, clipSource, clipVolume);
-            clipSource.start(startTime, 0, duration);
+            clipSource.start(startTime, 0, duration + 0.200);
          }
          else {
             clipSource.connect(audioSink);
@@ -295,6 +292,10 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
                   delete unmatchedNotes[note];
                }
             }
+         for (const [note, noteData] of Object.entries(unmatchedNotes)) {
+            const noteDuration = audioClip.getDuration() - noteData[0];
+            playNote(note, noteData[1], startTime + noteData[0], -noteDuration);
+         }
          expectedDuration = (duration && (duration < audioClip.getDuration())) ? duration : audioClip.getDuration();
       }
       return expectedDuration;
@@ -342,12 +343,10 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
 
       function playNoteOffline(offlineContext, note, velocity, startTime, duration) {
          const noteSource = instrument.getNoteOffline(offlineContext, note);
-         const noteVolume = new GainNode(offlineContext);
+         const noteVolume = new GainNode(offlineContext, { gain: velocity });
          noteSource.connect(noteVolume).connect(offlineContext.destination);
-         noteVolume.gain.setValueAtTime(velocity, 0.0);
-         noteVolume.gain.setTargetAtTime(0.0, startTime + duration - 0.03, 0.03);
-         noteSource.start(startTime);
-         noteSource.stop(startTime + duration);
+         noteVolume.gain.setTargetAtTime(0.0, startTime + duration, 0.03);
+         noteSource.start(startTime, 0, duration + 0.200);
          noteSources.push(noteSource);
       }
 
@@ -457,6 +456,10 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
                playNoteOffline(offlineContext, note, unmatchedNotes[note][1], unmatchedNotes[note][0], Number(startTime) - unmatchedNotes[note][0]);
                delete unmatchedNotes[note];
             }
+         }
+         for (const [note, noteData] of Object.entries(unmatchedNotes)) {
+            const noteDuration = recordedDuration - noteData[0];
+            playNoteOffline(offlineContext, note, noteData[1], noteData[0], noteDuration);
          }
          const renderedData = await offlineContext.startRendering();
          noteSources.splice(0, noteSources.length);

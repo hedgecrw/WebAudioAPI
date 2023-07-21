@@ -36,6 +36,5 @@ Javascript library to generate music using the Web Audio API
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
  - [ ] For all effects, add parameter to allow effect to slowly take effect (setTargetAtTime)
  - [ ] Make library fully General MIDI 2 compliant
- - [ ] Choose device to use for audio output (instead of default speakers)
  - [ ] Create startAndExport() to mimic start() on AudioContext, except that it also streams to an AudioBuffer until stop() is called
  - [ ] Create export() to mimic start(), except that exporting is done as quickly as possible and nothing comes out of speakers (requires knowing when to stop???)

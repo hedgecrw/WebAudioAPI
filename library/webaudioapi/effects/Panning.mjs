@@ -54,8 +54,8 @@ export class Panning extends EffectBase {
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async update({leftToRightRatio}, updateTime) {
-      if (!intensity)
-         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "leftToRightRatio"');
+      if (leftToRightRatio == null)
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
       const panningValue = 2.0 * (leftToRightRatio - 0.5);
       this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
       return true;

@@ -101,5 +101,5 @@ export const EffectType = {
  * @constant {Object.<string, number>}
  */
 export const EncodingType = {
-   WAV: 1, MP3: 2, OGG: 3
+   WAV: 1
 };

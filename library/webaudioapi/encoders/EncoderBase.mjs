@@ -5,7 +5,7 @@ export class EncoderBase {
     * Called by a concrete encoder instance to initialize the inherited {@link EncoderBase} data
     * structure.
     */
-   constructor() {}
+   constructor() { /* Empty constructor */ }
 
    /**
     * Encodes the corresponding audio buffer, and returns a

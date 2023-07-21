@@ -28,12 +28,11 @@ export class EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {Object} effectOptions - Effect-specific options (TODO)
+    * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async update(effectOptions, updateTime) { return false; }
-   // TODO: Verify correct options within each concrete update() function, Errors.mjs
 
    /**
     * Returns a reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}

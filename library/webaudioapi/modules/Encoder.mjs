@@ -21,11 +21,11 @@ const EncoderClasses = {
  * to the `fileType` parameter must be the **numeric value** associated with a certain
  * {@link module:Constants.EncodingType EncodingType}, not a string-based key.
  * 
- * @param {number} fileType - Numeric value corresponding to the desired file {@link module:Constants.EncodingType EncodingType}
+ * @param {number} encodingType - Numeric value corresponding to the desired file {@link module:Constants.EncodingType EncodingType}
  * @returns {EncoderBase} Concrete encoder implementation for the specified {@link module:Constants.EncodingType EncodingType}
  * @see {@link module:Constants.EncodingType EncodingType}
  * @see {@link EncoderBase}
  */
-export function getEncoderFor(fileType) {
-   return new EncoderClasses[fileType]();
+export function getEncoderFor(encodingType) {
+   return new EncoderClasses[encodingType]();
 }

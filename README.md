@@ -23,7 +23,6 @@ Javascript library to generate music using the Web Audio API
 
 ## Future Work
 
- - [ ] Implement proper error handling (Errors.js)
  - [ ] Allow instruments to specify their min/max valid notes
  - [ ] Allow instruments to specify if continuous or decaying
  - [ ] Add note looping for sustained notes if continuous instrument
@@ -36,9 +35,7 @@ Javascript library to generate music using the Web Audio API
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
  - [ ] For all effects, add parameter to allow effect to slowly take effect (setTargetAtTime)
-
+ - [ ] Make library fully General MIDI 2 compliant
  - [ ] Choose device to use for audio output (instead of default speakers)
- - [ ] Create async recordClip(startTime, duration) to record from input device to AudioBuffer (either can be null)
- - [ ] Create exportClip(clip, format, samplingRate) to export an AudioBuffer to a file
  - [ ] Create startAndExport() to mimic start() on AudioContext, except that it also streams to an AudioBuffer until stop() is called
  - [ ] Create export() to mimic start(), except that exporting is done as quickly as possible and nothing comes out of speakers (requires knowing when to stop???)

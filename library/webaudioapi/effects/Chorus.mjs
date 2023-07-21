@@ -27,7 +27,13 @@ export class Chorus extends EffectBase {
     * @see {@link EffectParameter}
     */
    static getParameters() {
-      return [];
+      return [
+         { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
+         { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+         { name: 'delayOffset', type: 'number', validValues: [0, 0.05], defaultValue: 0 },
+         { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
+         { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+      ];
    }
 
    async load() {

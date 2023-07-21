@@ -12,11 +12,23 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Vibrato extends EffectBase {
 
+   /** @type {DelayNode} */
+   #delay;
+   /** @type {OscillatorNode} */
+   #lfo;
+   /** @type {GainNode} */
+   #gain;
+
    /**
     * Constructs a new {@link Vibrato} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+      this.#delay = new DelayNode(audioContext, {delayTime: 1, maxDelayTime: 10});
+      this.#lfo = new OscillatorNode(audioContext, {frequency: 5});
+      this.#gain = new GainNode(audioContext, {gain: 0});
+      this.#lfo.connect(this.#gain).connect(this.#delay.delayTime);
+      this.#lfo.start();
    }
 
    /**
@@ -27,7 +39,10 @@ export class Vibrato extends EffectBase {
     * @see {@link EffectParameter}
     */
    static getParameters() {
-      return [];
+      return [
+         { name: 'rate', type: 'number', validValues: [0, 8], defaultValue: 5 }, 
+         { name: 'depth', type: 'number', validValues: [0, 0.1], defaultValue: 0 }, 
+      ];
    }
 
    async load() {
@@ -43,19 +58,22 @@ export class Vibrato extends EffectBase {
     * 
     * @param {number} rate - Frequency at which an oscillator modulates the audio signal
     * @param {number} depth - Amount of pitch variation as a percentage between [0.0, 1.0]
-    * @param {boolean} sync - Whether to synchronize modulation speed with the tempo of the audio
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, depth, sync}, updateTime) {
-      return false;
+   async update({rate, depth}, updateTime) {
+      if (rate != null)
+         this.#lfo.frequency.value = rate;
+      if (depth != null) 
+         this.#gain.gain.value = (depth / (2 * Math.PI * this.#lfo.frequency.value));
+      return true;
    }
 
    getInputNode() {
-      return;
+      return this.#delay;
    }
 
    getOutputNode() {
-      return;
+      return this.#delay;
    }
 }

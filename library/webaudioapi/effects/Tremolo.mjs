@@ -13,11 +13,21 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Tremolo extends EffectBase {
 
+   /** @type {OscillatorNode} */
+   #lfo;
+   /** @type {GainNode} */
+   #gain;
+
    /**
     * Constructs a new {@link Tremolo} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+      this.#lfo = audioContext.createOscillator();
+      this.#gain = audioContext.createGain()
+      this.#lfo.frequency.value = 0;
+      this.#lfo.connect(this.#gain.gain);
+      this.#lfo.start();
    }
 
    /**
@@ -28,7 +38,9 @@ export class Tremolo extends EffectBase {
     * @see {@link EffectParameter}
     */
    static getParameters() {
-      return [];
+      return [
+         { name: 'tremeloFrequency', type: 'number', validValues: [0, 20], defaultValue: 0 },
+      ];
    }
 
    async load() {
@@ -42,21 +54,22 @@ export class Tremolo extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
-    * @param {number} depth - Amount of amplitude variation as a percentage between [0.0, 1.0]
-    * @param {boolean} sync - Whether to synchronize modulation speed with the tempo of the audio
+    * @param {number} tremeloFrequency - Frequency at which an oscillator modulates the tremolo signal
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, depth, sync}, updateTime) {
-      return false;
+   async update({ tremeloFrequency }, updateTime) {
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      if (tremeloFrequency != null) 
+         this.#lfo.frequency.value = tremeloFrequency;
+      return true;
    }
 
    getInputNode() {
-      return;
+      return this.#gain;
    }
 
    getOutputNode() {
-      return;
+      return this.#gain;
    }
 }

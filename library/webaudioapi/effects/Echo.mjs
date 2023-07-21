@@ -12,11 +12,36 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Echo extends EffectBase {
 
+   /** @type {DelayNode} */
+   #delay;
+   /** @type {GainNode} */
+   #gain;
+   /** @type {GainNode} */
+   #destination
+
+   #echo = {
+      feedback: 0.2,
+      intensity: 0.2,
+      maxDuration: 1,
+   }
+
    /**
     * Constructs a new {@link Echo} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+
+      this.#delay = new DelayNode(audioContext);
+      this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
+
+      this.#gain = new GainNode(audioContext);
+      this.#gain.gain.value = this.#echo.intensity;
+
+      this.#destination = new GainNode(audioContext);
+      this.#destination.gain.value = 1;
+
+      this.#gain.connect(this.#delay);
+      this.#delay.connect(this.#gain).connect(this.#destination);
    }
 
    /**
@@ -27,7 +52,10 @@ export class Echo extends EffectBase {
     * @see {@link EffectParameter}
     */
    static getParameters() {
-      return [];
+      return [
+         { name: 'feedback', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
+         { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
+      ];
    }
 
    async load() {
@@ -47,14 +75,22 @@ export class Echo extends EffectBase {
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async update({feedback, intensity}, updateTime) {
-      return false;
+      if (feedback != null) {
+         this.#echo.feedback = feedback;
+         this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
+      }
+      if (intensity != null) {
+         this.#echo.intensity = intensity;
+         this.#gain.gain.value = this.#echo.intensity;
+      }
+      return true;
    }
 
    getInputNode() {
-      return;
+      return this.#delay;
    }
 
    getOutputNode() {
-      return;
+      return this.#destination;
    }
 }

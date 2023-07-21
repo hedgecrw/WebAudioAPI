@@ -11,11 +11,44 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Flanger extends EffectBase {
 
+   /** @type {GainNode} */
+   #destination
+   /** @type {GainNode} */
+   #dry
+   /** @type {GainNode} */
+   #wet
+   /** @type {DelayNode} */
+   #delayNode;
+   /** @type {OscillatorNode} */
+   #lfo;
+   /** @type {GainNode} */
+   #feedback
+
    /**
     * Constructs a new {@link Flanger} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+      this.#destination = new GainNode(audioContext);
+      this.#dry = new GainNode(audioContext);
+      this.#wet = new GainNode(audioContext);
+      this.#delayNode = new DelayNode(audioContext);
+      this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
+      this.#feedback = new GainNode(audioContext);
+
+      this.#dry.gain.value = 1;
+      this.#wet.gain.value = 0.2;
+      this.#feedback.gain.value = 0;
+      this.#delayNode.delayTime.value = 0;
+      this.#lfo.type = "sine";
+      this.#lfo.start();
+
+      this.#dry.connect(this.#wet);
+      this.#dry.connect(this.#destination);
+      this.#wet.connect(this.#delayNode).connect(this.#destination);
+      this.#delayNode.connect(this.#feedback);
+      this.#lfo.connect(this.#delayNode);
+      this.#feedback.connect(this.#wet);
    }
 
    /**
@@ -26,7 +59,13 @@ export class Flanger extends EffectBase {
     * @see {@link EffectParameter}
     */
    static getParameters() {
-      return [];
+      return [
+         { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
+         { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+         { name: 'delayOffset', type: 'number', validValues: [0, 0.015], defaultValue: 0 },
+         { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
+         { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+      ];
    }
 
    async load() {
@@ -41,7 +80,7 @@ export class Flanger extends EffectBase {
     * changes to take effect.
     * 
     * @param {number} rate - Frequency at which an oscillator modulates the delayed flanger signal
-    * @param {string} shape - Waveform shape used to modulate the delayed flanger signal
+    * @param {string} shape - Waveform shape used to modulate the delayed chorus signal
     * @param {number} delayOffset - Number of seconds of delay between the original signal and the flanger signal
     * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
     * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
@@ -49,14 +88,24 @@ export class Flanger extends EffectBase {
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
    async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+      if (rate != null)
+         this.#lfo.frequency.value = rate; 
+      if (shape != null) 
+         this.#lfo.type = shape == 0 ? "sine" : "triangle";
+      if (delayOffset != null)
+         this.#delayNode.delayTime.value = delayOffset * 1;
+      if (variableFeedback != null)
+         this.#feedback.gain.value = variableFeedback;
+      if (intensity != null)
+         this.#wet.gain.value = intensity;
       return false;
    }
 
    getInputNode() {
-      return;
+      return this.#dry;
    }
 
    getOutputNode() {
-      return;
+      return this.#destination;
    }
 }

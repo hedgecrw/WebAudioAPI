@@ -260,7 +260,7 @@ export class WebAudioAPI {
          delete this.#audioInputDevices[key];
       if (navigator.mediaDevices?.enumerateDevices) {
          try {
-            await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+            await navigator.mediaDevices.getUserMedia({ audio: true });
             for (const device of await navigator.mediaDevices.enumerateDevices())
                if (device.kind == 'audioinput') {
                   let alreadyFound = false;
@@ -299,7 +299,7 @@ export class WebAudioAPI {
          delete this.#audioOutputDevices[key];
       if (navigator.mediaDevices?.enumerateDevices) {
          try {
-            await navigator.mediaDevices.getUserMedia({audio: true, video: false});
+            await navigator.mediaDevices.getUserMedia({ audio: true });
             for (const device of await navigator.mediaDevices.enumerateDevices())
                if (device.kind == 'audiooutput') {
                   let alreadyFound = false;

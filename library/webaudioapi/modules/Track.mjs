@@ -11,8 +11,8 @@
 
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
 import * as WebAudioApiErrors from './Errors.mjs';
-import { getEncoderFor } from './Encoder.mjs';
 import { EncodingType } from './Constants.mjs';
+import { getEncoderFor } from './Encoder.mjs';
 import { loadEffect } from './Effect.mjs';
 
 /**
@@ -33,7 +33,8 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    // Track-local variable definitions
    let instrument = null, midiDevice = null, audioDeviceInput = null;
    const audioSources = [], asyncAudioSources = [], effects = [];
-   const audioSink = new GainNode(audioContext);
+   const audioSink = new AnalyserNode(audioContext, { fftSize: 256 });
+   const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
    audioSink.connect(trackAudioSink);
 
    // Private internal Track functions
@@ -80,6 +81,19 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     */
    function removeInstrument() {
       instrument = null;
+   }
+
+   /**
+    * Returns a buffer containing the realtime frequency content of the audio being produced by
+    * the current track.
+    * 
+    * @returns {Uint8Array} Array containing frequency content of the track's current audio output
+    * @memberof Track
+    * @instance
+    */
+   function getAnalysisBuffer() {
+      audioSink.getByteFrequencyData(analysisBuffer);
+      return analysisBuffer;
    }
 
    /**
@@ -721,6 +735,19 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    }
 
    /**
+    * Cancels any current or scheduled audio from playing on the current track.
+    * 
+    * @memberof Track
+    * @instance
+    */
+   function clearTrack() {
+      for (const source of audioSources)
+         source.stop();
+      for (const source of asyncAudioSources)
+         source.sourceNode.stop();
+   }
+
+   /**
     * Deletes the current track and cancels any scheduled audio from playing or from starting
     * to play in the future.
     * 
@@ -729,10 +756,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     */
    function deleteTrack() {
       disconnectFromMidiDevice();
-      for (const source of audioSources)
-         source.stop();
-      for (const source of asyncAudioSources)
-         source.sourceNode.stop();
+      clearTrack();
       for (const effect of effects)
          effect.output.disconnect();
    }
@@ -747,6 +771,6 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       name,
       updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync,
       playNote, playClip, playFile, recordMidiClip, recordAudioClip, connectToMidiDevice, disconnectFromMidiDevice,
-      connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack
+      connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
    };
 }

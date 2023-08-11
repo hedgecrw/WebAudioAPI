@@ -145,7 +145,7 @@ window.resume = async function() {
 
 window.stop = async function() {
    window.playing = false;
-   window.audioAPI.createTrack('defaultTrack');
+   window.audioAPI.clearTrack('defaultTrack');
    const instrumentSelector = document.getElementById('instrument');
    await window.audioAPI.updateInstrument('defaultTrack', instrumentSelector.options[instrumentSelector.selectedIndex].value);
 }

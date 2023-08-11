@@ -97,6 +97,14 @@ export const EffectType = {
 };
 
 /**
+ * Object representing a mapping between an acoustic analysis type and its unique internal code.
+ * @constant {Object.<string, number>}
+ */
+export const AnalysisType = {
+   PowerSpectrum: 1, TotalPower: 2
+};
+
+/**
  * Object representing a mapping between an encoding file type and its unique internal code.
  * @constant {Object.<string, number>}
  */

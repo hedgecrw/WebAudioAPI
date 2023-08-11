@@ -38,6 +38,12 @@
             }
         },
         {
+            "files": ["AnalysisBase.mjs"],
+            "rules": {
+                "no-unused-vars": "off"
+            }
+        },
+        {
             "files": ["EffectBase.mjs"],
             "rules": {
                 "no-unused-vars": "off"

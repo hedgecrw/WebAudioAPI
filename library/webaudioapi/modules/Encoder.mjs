@@ -3,12 +3,6 @@
  * @module Encoder
  */
 
-/**
- * Object containing all encoder-specific {@link WebAudioAPI} functionality.
- * @namespace Encoder
- * @global
- */
-
 import { EncodingType } from './Constants.mjs';
 import { WavFileEncoder } from '../encoders/WavFileEncoder.mjs';
 

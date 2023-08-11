@@ -1,8 +1,9 @@
-import { Note, Duration, EffectType, EncodingType } from './modules/Constants.mjs';
+import { Note, Duration, EffectType, EncodingType, AnalysisType } from './modules/Constants.mjs';
 import { createTrack as createTrackImpl } from './modules/Track.mjs';
 import { loadEffect, getEffectParameters } from './modules/Effect.mjs';
 import { loadInstrument } from './modules/Instrument.mjs';
 import * as WebAudioApiErrors from './modules/Errors.mjs';
+import { getAnalyzerFor } from './modules/Analysis.mjs';
 import { version } from '../../package.json';
 
 /**
@@ -72,8 +73,12 @@ export class WebAudioAPI {
    #audioOutputDevices = {};
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
+   /** @type {AnalyserNode} */
+   #analysisNode;
    /** @type {GainNode} */
    #sourceSinkNode;
+   /** @type {Uint8Array} */
+   #analysisBuffer;
 
    /**
     * Returns a singleton instance of the WebAudioAPI interface.
@@ -87,7 +92,9 @@ export class WebAudioAPI {
       // Generate and connect all required audio nodes
       this.#sourceSinkNode = new GainNode(this.#audioContext);
       this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
-      this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#audioContext.destination);
+      this.#analysisNode = new AnalyserNode(this.#audioContext, { fftSize: 256 });
+      this.#analysisBuffer = new Uint8Array(this.#analysisNode.frequencyBinCount);
+      this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#analysisNode).connect(this.#audioContext.destination);
    }
 
    /**
@@ -318,6 +325,37 @@ export class WebAudioAPI {
    }
 
    /**
+    * Analyzes the current realtime audio output according to the specified `analysisType`.
+    * 
+    * The `trackName` parameter is optional, and if left blank, will cause the analysis to be
+    * carried out on the aggregate output over all tracks and all applied effects.
+    * 
+    * The type of return value from this function will depend on the analysis being carried out
+    * and can be determined by examining the corresponding concrete definitions of the
+    * {@link AnalysisBase} interface.
+    * 
+    * @param {number} analysisType - Audio {@link module:Constants.AnalysisType AnalysisType} to execute
+    * @param {string} [trackName] - Name of the track whose audio should be analyzed
+    * @returns {Any} Result of the specified analysis
+    * @see {@link module:Constants.AnalysisType AnalysisType}
+    */
+   analyzeAudio(analysisType, trackName) {
+      let frequencyContent = null;
+      if (!Object.values(AnalysisType).includes(Number(analysisType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target analysis type identifier (${analysisType}) does not exist`);
+      if (trackName) {
+         if (!(trackName in this.#tracks))
+            throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+         frequencyContent = this.#tracks[trackName].getAnalysisBuffer();
+      }
+      else {
+         frequencyContent = this.#analysisBuffer;
+         this.#analysisNode.getByteFrequencyData(frequencyContent);
+      }
+      return getAnalyzerFor(analysisType).analyze(frequencyContent);
+   }
+
+   /**
     * Creates a track capable of playing sequential audio. A single track can only utilize a
     * single instrument at a time.
     * 
@@ -347,6 +385,24 @@ export class WebAudioAPI {
    removeAllTracks() {
       for (const name in this.#tracks)
          this.removeTrack(name);
+   }
+
+   /**
+    * Cancels all current and scheduled audio from playing on the specified track.
+    * 
+    * @param {string} name - Name of the track to clear
+    */
+   clearTrack(name) {
+      if (name in this.#tracks)
+         this.#tracks[name].clearTrack();
+   }
+
+   /**
+    * Cancels all current and scheduled audio from playing on all existing tracks.
+    */
+   clearAllTracks() {
+      for (const name in this.#tracks)
+         this.#tracks[name].clearTrack();
    }
 
    /**

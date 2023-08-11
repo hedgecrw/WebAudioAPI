@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>Live Audio Analysis Demo</title>
+    <link rel="stylesheet" href="analysisdemo.css">
+    <script type="module" src="js/webAudioAPI.js"></script>
+    <script src="js/analysisdemo.js"></script>
+  </head>
+
+  <body>
+
+    <div class="choice">
+      Status:&nbsp;<span id="status">Not Ready</span>
+    </div>
+
+    <div class="choice">
+      <label for="device">MIDI Device:&nbsp;</label>
+      <select name="device" id="device" onchange="changeMidiDevice()"></select>
+    </div>
+
+    <div class="choice">
+      <label for="instrument">Instrument:&nbsp;</label>
+      <select name="instrument" id="instrument" onchange="changeInstrument()"></select>
+    </div>
+
+    <div class="choice">
+      <label for="input">Audio Input Device:&nbsp;</label>
+      <select name="input" id="input" onchange="changeAudioInputDevice()"></select>
+    </div>
+
+    <div class="choice">
+      <label for="output">Audio Output Device:&nbsp;</label>
+      <select name="output" id="output" onchange="changeAudioOutputDevice()"></select>
+    </div>
+
+    <p>&nbsp;</p>
+
+    <div class="choice">
+      <label for="midiStartOffset">Record MIDI Clip:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start Time Offset:&nbsp;</label>
+      <input type="number" name="midiStartOffset" id="midiStartOffset" min="0" max="100" value="0">
+      <label for="midiDuration">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Duration:&nbsp;</label>
+      <select name="midiDuration" id="midiDuration">
+        <option value="0">Until Stopped</option>
+        <option value="1">1 second</option>
+        <option value="2">2 seconds</option>
+        <option value="3">3 seconds</option>
+      </select>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <button type="button" id="startMidiButton" onclick="startRecordMidi()">Start Recording</button>
+      <button type="button" id="stopMidiButton" onclick="stopRecordMidi()" disabled="true">Stop Recording</button>
+      <button type="button" id="playMidiButton" onclick="playMidi()" disabled="true">Play Back</button>
+      <button type="button" id="exportMidiButton" onclick="exportMidi()" disabled="true">Export</button>
+    </div>
+
+    <div class="choice">
+      <label for="audioStartOffset">Record Audio Clip:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start Time Offset:&nbsp;</label>
+      <input type="number" name="audioStartOffset" id="audioStartOffset" min="0" max="100" value="0">
+      <label for="audioDuration">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Duration:&nbsp;</label>
+      <select name="audioDuration" id="audioDuration">
+        <option value="0">Until Stopped</option>
+        <option value="1">1 second</option>
+        <option value="2">2 seconds</option>
+        <option value="3">3 seconds</option>
+      </select>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <button type="button" id="startAudioButton" onclick="startRecordAudio()">Start Recording</button>
+      <button type="button" id="stopAudioButton" onclick="stopRecordAudio()" disabled="true">Stop Recording</button>
+      <button type="button" id="playAudioButton" onclick="playAudio()" disabled="true">Play Back</button>
+      <button type="button" id="exportAudioButton" onclick="exportAudio()" disabled="true">Export</button>
+    </div>
+
+  </body>
+
+</html>

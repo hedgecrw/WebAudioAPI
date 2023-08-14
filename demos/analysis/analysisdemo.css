@@ -1,5 +1,13 @@
-.choice {
+canvas {
+  display: block;
+}
+
+.center {
   display: flex;
   justify-content: center;
   margin: 12px auto 12px auto;
+}
+
+.class {
+  display: block;
 }

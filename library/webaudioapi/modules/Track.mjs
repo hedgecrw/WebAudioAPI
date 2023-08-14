@@ -33,7 +33,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    // Track-local variable definitions
    let instrument = null, midiDevice = null, audioDeviceInput = null;
    const audioSources = [], asyncAudioSources = [], effects = [];
-   const audioSink = new AnalyserNode(audioContext, { fftSize: 256 });
+   const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
    const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
    audioSink.connect(trackAudioSink);
 

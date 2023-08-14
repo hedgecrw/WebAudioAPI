@@ -92,7 +92,7 @@ export class WebAudioAPI {
       // Generate and connect all required audio nodes
       this.#sourceSinkNode = new GainNode(this.#audioContext);
       this.#compressorNode = new DynamicsCompressorNode(this.#audioContext);
-      this.#analysisNode = new AnalyserNode(this.#audioContext, { fftSize: 256 });
+      this.#analysisNode = new AnalyserNode(this.#audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
       this.#analysisBuffer = new Uint8Array(this.#analysisNode.frequencyBinCount);
       this.#sourceSinkNode.connect(this.#compressorNode).connect(this.#analysisNode).connect(this.#audioContext.destination);
    }

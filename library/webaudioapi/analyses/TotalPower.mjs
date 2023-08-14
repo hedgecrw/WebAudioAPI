@@ -19,13 +19,15 @@ export class TotalPower extends AnalysisBase {
 
    /**
     * Performs a total power spectral analysis on the passed-in buffer containing audio
-    * frequency content.
+    * frequency content. The resulting value will be between [0, 1], where 0 represents
+    * silence and 1 represents the maximum representable power.
     * 
     * @param {Uint8Array} frequencyContent - {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array} containing audio frequency data
-    * @returns {number} Total power content across all frequencies in the specified frequency data
+    * @returns {number} Total power content across all frequencies in the specified frequency data as a value between [0, 1]
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array Uint8Array}
     */
    static analyze(frequencyContent) {
-      return undefined;
+      const frequencyTotal = frequencyContent.reduce(function(a, b) { return a + b; });
+      return frequencyTotal / (frequencyContent.length * 255);
    }
 }

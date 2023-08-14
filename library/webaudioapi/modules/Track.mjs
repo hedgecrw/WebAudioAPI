@@ -10,8 +10,8 @@
  */
 
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
+import { EncodingType, AnalysisType } from './Constants.mjs';
 import * as WebAudioApiErrors from './Errors.mjs';
-import { EncodingType } from './Constants.mjs';
 import { getEncoderFor } from './Encoder.mjs';
 import { loadEffect } from './Effect.mjs';
 
@@ -87,12 +87,16 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     * Returns a buffer containing the realtime frequency content of the audio being produced by
     * the current track.
     * 
-    * @returns {Uint8Array} Array containing frequency content of the track's current audio output
+    * @param {number} analysisType - Audio {@link module:Constants.AnalysisType AnalysisType} for which the buffer will be used
+    * @returns {Uint8Array} Array containing time or frequency content of the track's current audio output
     * @memberof Track
     * @instance
     */
-   function getAnalysisBuffer() {
-      audioSink.getByteFrequencyData(analysisBuffer);
+   function getAnalysisBuffer(analysisType) {
+      if (analysisType == AnalysisType.TimeSeries)
+         audioSink.getByteTimeDomainData(analysisBuffer);
+      else
+         audioSink.getByteFrequencyData(analysisBuffer);
       return analysisBuffer;
    }
 

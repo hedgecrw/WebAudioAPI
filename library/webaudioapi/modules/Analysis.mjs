@@ -23,5 +23,5 @@ const AnalysisClasses = {
  * @see {@link AnalysisBase}
  */
 export function getAnalyzerFor(analysisType) {
-   return new AnalysisClasses[analysisType];
+   return AnalysisClasses[analysisType];
 }

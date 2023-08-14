@@ -101,7 +101,7 @@ export const EffectType = {
  * @constant {Object.<string, number>}
  */
 export const AnalysisType = {
-   PowerSpectrum: 1, TotalPower: 2
+   TimeSeries: 1, PowerSpectrum: 2, TotalPower: 3
 };
 
 /**

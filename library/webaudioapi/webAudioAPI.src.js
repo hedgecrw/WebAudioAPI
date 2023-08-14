@@ -198,6 +198,19 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns a listing of all available audio analysis types in the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available analysis options for displaying on a
+    * web page.
+    * 
+    * @returns {Object.<string, number>} Listing of all available audio analysis types in the {@link WebAudioAPI} library
+    * @see {@link module:Constants.AnalysisType AnalysisType}
+    */
+   getAvailableAnalysisTypes() {
+      return AnalysisType;
+   }
+
+   /**
     * Returns a listing of the available instruments located in the specified asset library.
     * 
     * Individual results from this function call can be passed directly to the
@@ -340,19 +353,22 @@ export class WebAudioAPI {
     * @see {@link module:Constants.AnalysisType AnalysisType}
     */
    analyzeAudio(analysisType, trackName) {
-      let frequencyContent = null;
+      let analysisBuffer = null;
       if (!Object.values(AnalysisType).includes(Number(analysisType)))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target analysis type identifier (${analysisType}) does not exist`);
       if (trackName) {
          if (!(trackName in this.#tracks))
             throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-         frequencyContent = this.#tracks[trackName].getAnalysisBuffer();
+         analysisBuffer = this.#tracks[trackName].getAnalysisBuffer(analysisType);
       }
       else {
-         frequencyContent = this.#analysisBuffer;
-         this.#analysisNode.getByteFrequencyData(frequencyContent);
+         analysisBuffer = this.#analysisBuffer;
+         if (analysisType == AnalysisType.TimeSeries)
+            this.#analysisNode.getByteTimeDomainData(analysisBuffer);
+         else
+            this.#analysisNode.getByteFrequencyData(analysisBuffer);
       }
-      return getAnalyzerFor(analysisType).analyze(frequencyContent);
+      return (analysisType == AnalysisType.TimeSeries) ? analysisBuffer : getAnalyzerFor(analysisType).analyze(analysisBuffer);
    }
 
    /**

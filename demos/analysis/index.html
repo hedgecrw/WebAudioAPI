@@ -16,6 +16,11 @@
     </div>
 
     <div class="center">
+      <label for="instrument">Instrument:&nbsp;</label>
+      <select name="instrument" id="instrument" onchange="changeInstrument()"></select>
+    </div>
+
+    <div class="center">
       <label for="device">MIDI Device:&nbsp;</label>
       <select name="device" id="device" onchange="changeMidiDevice()"></select>
     </div>
@@ -31,6 +36,13 @@
 
     <div class="center">
       <div class="analysis">
+        Fun Visualization
+        <canvas id="winamp" height="400" width="400"></canvas>
+      </div>
+    </div>
+
+    <div class="center">
+      <div class="analysis">
         Power Spectrum
         <canvas id="spectrum" height="255" width="600"></canvas>
       </div>
@@ -39,7 +51,7 @@
     <div class="center">
       <div class="analysis">
         Total Power
-        <canvas id="power" height="200" width="600"></canvas>
+        <canvas id="power" height="200" width="300"></canvas>
       </div>
     </div>
 

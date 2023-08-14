@@ -1,28 +1,41 @@
 window.onload = () => {
    window.audioAPI = new WebAudioAPI();
    window.audioAPI.createTrack('defaultTrack');
-   document.getElementById("status").textContent = 'Loading instrument...';
    const midiDeviceSelector = document.getElementById('device');
    midiDeviceSelector.add(new Option('Choose a MIDI device'));
+   const instrumentSelector = document.getElementById('instrument');
+   instrumentSelector.add(new Option('Choose an instrument'));
+   window.audioAPI.getAvailableInstruments('../instruments').then(instruments => instruments.forEach(instrument => instrumentSelector.add(new Option(instrument))));
    window.audioAPI.getAvailableMidiDevices().then(devices => devices.forEach(device => midiDeviceSelector.add(new Option(device))));
-   window.audioAPI.getAvailableInstruments('../instruments').then(() => {
-      window.audioAPI.updateInstrument('defaultTrack', 'Grand Piano').then(() => {
-         document.getElementById("status").textContent = 'Awaiting MIDI device selection...';
-      });
-   });
    const waveformCanvas = document.getElementById('waveform');
+   const winampCanvas = document.getElementById('winamp');
    const spectrumCanvas = document.getElementById('spectrum');
    const powerCanvas = document.getElementById('power');
    const waveformCanvasContext = waveformCanvas.getContext("2d");
+   const winampCanvasContext = winampCanvas.getContext("2d");
    const spectrumCanvasContext = spectrumCanvas.getContext("2d");
    const powerCanvasContext = powerCanvas.getContext("2d");
    waveformCanvasContext.fillStyle = "rgb(200, 200, 200)";
    waveformCanvasContext.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+   winampCanvasContext.fillStyle = "rgb(0, 0, 0)";
+   winampCanvasContext.fillRect(0, 0, winampCanvas.width, winampCanvas.height);
    spectrumCanvasContext.fillStyle = "rgb(0, 0, 0)";
    spectrumCanvasContext.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
    powerCanvasContext.fillStyle = "rgb(220, 220, 220)";
    powerCanvasContext.fillRect(0, 0, powerCanvas.width, powerCanvas.height);
 };
+
+function changeInstrument() {
+   const instrumentSelector = document.getElementById('instrument');
+   const instrumentSelection = instrumentSelector.options[instrumentSelector.selectedIndex].value;
+   if (instrumentSelector.selectedIndex > 0) {
+      document.getElementById("status").textContent = 'Loading...';
+      window.audioAPI.updateInstrument('defaultTrack', instrumentSelection).then(() => {
+         document.getElementById("status").textContent = 'Ready';
+         console.log('Instrument loading complete!');
+      });
+   }
+}
 
 function updateWaveform() {
    requestAnimationFrame(updateWaveform);
@@ -45,6 +58,25 @@ function updateWaveform() {
    }
    waveformCanvasContext.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
    waveformCanvasContext.stroke();
+}
+
+function updateWinamp() {
+   const winampCanvas = document.getElementById('winamp');
+   const winampCanvasContext = winampCanvas.getContext("2d");
+   const analysisTypes = window.audioAPI.getAvailableAnalysisTypes();
+   const waveform = window.audioAPI.analyzeAudio(analysisTypes['TimeSeries']);
+   winampCanvasContext.fillStyle = "rgba(0, 0, 0, 0.25)";
+   winampCanvasContext.fillRect(0, 0, winampCanvas.width, winampCanvas.height);
+   winampCanvasContext.fillStyle = "rgb(0, 32, 196)";
+   const radianAdd = 6.28318530718 / waveform.length;
+   for (let i = 0, r = 0; i < waveform.length; ++i, r += radianAdd) {
+      winampCanvasContext.beginPath();
+      winampCanvasContext.arc(waveform[i] * Math.cos(r) + winampCanvas.width / 2,
+                              waveform[i] * Math.sin(r) + winampCanvas.height / 2,
+                              2, 0, 6.28318530718, false);
+      winampCanvasContext.fill();
+   }
+   requestAnimationFrame(updateWinamp);
 }
 
 function updateSpectrum() {
@@ -70,6 +102,8 @@ function updatePower() {
    const power = window.audioAPI.analyzeAudio(analysisTypes['TotalPower']);
    powerCanvasContext.fillStyle = "rgb(0, 0, 0)";
    powerCanvasContext.fillRect(0, 0, powerCanvas.width, powerCanvas.height);
+   powerCanvasContext.fillStyle = `rgba(0, 100, 0, ${10.0 * power})`;
+   powerCanvasContext.fillRect(0, 0, powerCanvas.width, powerCanvas.height);
 }
 
 function changeMidiDevice() {
@@ -81,6 +115,7 @@ function changeMidiDevice() {
       window.audioAPI.connectMidiDeviceToTrack('defaultTrack', deviceSelection).then(() => {
          document.getElementById("status").textContent = 'Connected';
          updateWaveform();
+         updateWinamp();
          updateSpectrum();
          updatePower();
       });

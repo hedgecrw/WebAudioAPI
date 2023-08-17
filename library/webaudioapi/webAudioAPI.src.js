@@ -549,11 +549,12 @@ export class WebAudioAPI {
     * @param {string} effectName - Name of the master effect to be updated
     * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [transitionLength] - Number of seconds over which to update the effect
     */
-   async updateMasterEffect(effectName, effectOptions, updateTime) {
+   async updateMasterEffect(effectName, effectOptions, updateTime, transitionLength) {
       for (const effect of this.#effects)
          if (effect.name == effectName) {
-            await effect.update(effectOptions, updateTime ? Number(updateTime) : undefined);
+            await effect.update(effectOptions, updateTime ? Number(updateTime) : undefined, transitionLength ? (0.333 * Number(transitionLength)) : undefined);
             return;
          }
       throw new WebAudioApiErrors.WebAudioTargetError(`The target master effect (${effectName}) does not exist`);
@@ -572,11 +573,12 @@ export class WebAudioAPI {
     * @param {string} effectName - Name of the track effect to be updated
     * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [transitionLength] - Number of seconds over which to update the effect
     */
-   async updateTrackEffect(trackName, effectName, effectOptions, updateTime) {
+   async updateTrackEffect(trackName, effectName, effectOptions, updateTime, transitionLength) {
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined);
+      await this.#tracks[trackName].updateEffect(effectName, effectOptions, updateTime ? Number(updateTime) : undefined, transitionLength ? (0.333 * Number(transitionLength)) : undefined);
    }
 
    /**

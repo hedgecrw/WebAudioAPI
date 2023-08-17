@@ -49,12 +49,15 @@ export class Volume extends EffectBase {
     * 
     * @param {number} intensity - Intensity of the volume as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({intensity}, updateTime) {
+   async update({intensity}, updateTime, timeConstant) {
       if (intensity == null)
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
-      this.#volumeNode.gain.setValueAtTime(intensity, updateTime == null ? this.audioContext.currentTime : updateTime);
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+      this.#volumeNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
       return true;
    }
 

@@ -52,14 +52,18 @@ export class LowPassFilter extends EffectBase {
     * @param {number} cutoffFrequency - Frequency above which audio content will be reduced
     * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({cutoffFrequency, resonance}, updateTime) {
+   async update({cutoffFrequency, resonance}, updateTime, timeConstant) {
+      if ((cutoffFrequency == null) && (resonance == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the LowPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (cutoffFrequency != null)
-         this.#filterNode.frequency.setValueAtTime(cutoffFrequency, timeToUpdate);
+         this.#filterNode.frequency.setTargetAtTime(cutoffFrequency, timeToUpdate, timeConstantTarget);
       if (resonance != null)
-         this.#filterNode.Q.setValueAtTime(Math.max(resonance, 0.0001), timeToUpdate);
+         this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
       return true;
    }
 

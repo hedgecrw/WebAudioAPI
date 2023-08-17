@@ -59,19 +59,23 @@ export class Compression extends EffectBase {
     * @param {number} release - Number of seconds required to increase signal gain by 10 dB between [0.0, 1.0]
     * @param {number} intensity - Amount of compression applied as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({threshold, attack, release, intensity}, updateTime) {
+   async update({threshold, attack, release, intensity}, updateTime, timeConstant) {
+      if ((threshold == null) && (attack == null) && (release == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Compression effect without at least one of the following parameters: "threshold, attack, release, intensity"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (threshold != null)
-         this.#compressorNode.threshold.setValueAtTime(threshold, timeToUpdate);
+         this.#compressorNode.threshold.setTargetAtTime(threshold, timeToUpdate, timeConstantTarget);
       if (attack != null)
-         this.#compressorNode.attack.setValueAtTime(attack, timeToUpdate);
+         this.#compressorNode.attack.setTargetAtTime(attack, timeToUpdate, timeConstantTarget);
       if (release != null)
-         this.#compressorNode.release.setValueAtTime(release, timeToUpdate);
+         this.#compressorNode.release.setTargetAtTime(release, timeToUpdate, timeConstantTarget);
       if (intensity != null) {
          const ratioValue = 1.0 + (intensity * 19.0);
-         this.#compressorNode.ratio.setValueAtTime(ratioValue, timeToUpdate);
+         this.#compressorNode.ratio.setTargetAtTime(ratioValue, timeToUpdate, timeConstantTarget);
       }
       return true;
    }

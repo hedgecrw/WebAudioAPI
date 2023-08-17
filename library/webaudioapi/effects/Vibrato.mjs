@@ -59,13 +59,20 @@ export class Vibrato extends EffectBase {
     * @param {number} rate - Frequency at which an oscillator modulates the audio signal
     * @param {number} depth - Amount of pitch variation as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, depth}, updateTime) {
-      if (rate != null)
-         this.#lfo.frequency.value = rate;
-      if (depth != null) 
-         this.#gain.gain.value = (depth / (2 * Math.PI * this.#lfo.frequency.value));
+   async update({rate, depth}, updateTime, timeConstant) {
+      if ((rate == null) && (depth == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Vibrato effect without at least one of the following parameters: "rate, depth"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+      if (rate != null) 
+         this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+      if (depth != null) {
+         const gainValue = (depth / (2.0 * Math.PI * (rate != null) ? rate : this.#lfo.frequency.value));
+         this.#gain.gain.setTargetAtTime(gainValue, timeToUpdate, timeConstantTarget);
+      }
       return true;
    }
 

@@ -17,13 +17,13 @@ export class Echo extends EffectBase {
    /** @type {GainNode} */
    #gain;
    /** @type {GainNode} */
-   #destination
+   #destination;
 
    #echo = {
       feedback: 0.2,
       intensity: 0.2,
       maxDuration: 1,
-   }
+   };
 
    /**
     * Constructs a new {@link Echo} effect object.
@@ -72,16 +72,21 @@ export class Echo extends EffectBase {
     * @param {number} feedback - Amount of reflection fed back into the original sound
     * @param {number} intensity - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({feedback, intensity}, updateTime) {
+   async update({feedback, intensity}, updateTime, timeConstant) {
+      if ((feedback == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "feedback, intensity"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (feedback != null) {
          this.#echo.feedback = feedback;
-         this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
+         this.#delay.delayTime.setTargetAtTime(this.#echo.feedback * this.#echo.maxDuration, timeToUpdate, timeConstantTarget);
       }
       if (intensity != null) {
          this.#echo.intensity = intensity;
-         this.#gain.gain.value = this.#echo.intensity;
+         this.#gain.gain.setTargetAtTime(this.#echo.intensity, timeToUpdate, timeConstantTarget);
       }
       return true;
    }

@@ -29,7 +29,7 @@ export class Chorus extends EffectBase {
    static getParameters() {
       return [
          { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-         { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+         { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
          { name: 'delayOffset', type: 'number', validValues: [0, 0.05], defaultValue: 0 },
          { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
          { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
@@ -53,9 +53,14 @@ export class Chorus extends EffectBase {
     * @param {number} variableFeedback - Percentage of processed signal to be fed back into the chorus circuit
     * @param {number} intensity - Ratio of chorus-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+   async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime, timeConstant) {
+      if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Chorus effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       return false;
    }
 

@@ -24,7 +24,7 @@ export class Tremolo extends EffectBase {
    constructor(audioContext) {
       super(audioContext);
       this.#lfo = audioContext.createOscillator();
-      this.#gain = audioContext.createGain()
+      this.#gain = audioContext.createGain();
       this.#lfo.frequency.value = 0;
       this.#lfo.connect(this.#gain.gain);
       this.#lfo.start();
@@ -39,7 +39,7 @@ export class Tremolo extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'tremeloFrequency', type: 'number', validValues: [0, 20], defaultValue: 0 },
+         { name: 'rate', type: 'number', validValues: [0, 20], defaultValue: 0 },
       ];
    }
 
@@ -54,14 +54,17 @@ export class Tremolo extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} tremeloFrequency - Frequency at which an oscillator modulates the tremolo signal
+    * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({ tremeloFrequency }, updateTime) {
+   async update({ rate }, updateTime, timeConstant) {
+      if (rate == null)
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Tremolo effect without at least one of the following parameters: "rate"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
-      if (tremeloFrequency != null) 
-         this.#lfo.frequency.value = tremeloFrequency;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+      this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
       return true;
    }
 

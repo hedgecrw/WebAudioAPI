@@ -35,7 +35,6 @@ Javascript library to generate music using the Web Audio API
  - [ ] Use Sf3 SoundFont format for instrument storage and loading
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
- - [ ] For all effects, add parameter to allow effect to slowly take effect (setTargetAtTime)
  - [ ] Make library fully General MIDI 2 compliant
  - [ ] Create startAndExport() to mimic start() on AudioContext, except that it also streams to an AudioBuffer until stop() is called
  - [ ] Create export() to mimic start(), except that exporting is done as quickly as possible and nothing comes out of speakers (requires knowing when to stop???)

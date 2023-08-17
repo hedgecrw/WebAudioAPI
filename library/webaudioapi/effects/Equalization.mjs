@@ -44,9 +44,14 @@ export class Equalization extends EffectBase {
     * @param {number[]} frequencyBandUpperCutoffs - Upper frequency cutoffs for each band in the equalizer
     * @param {number[]} frequencyBandVolumes - Volumes for each frequency band in the equalizer
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime) {
+   async update({frequencyBandUpperCutoffs, frequencyBandVolumes}, updateTime, timeConstant) {
+      if ((frequencyBandUpperCutoffs == null) && (frequencyBandVolumes == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Equalization effect without at least one of the following parameters: "frequencyBandUpperCutoffs, frequencyBandVolumes"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       return false;
    }
 

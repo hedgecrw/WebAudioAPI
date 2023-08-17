@@ -45,9 +45,14 @@ export class Distortion extends EffectBase {
     * @param {boolean} tone - Whether to smooth distortion by adding tasty tone to it
     * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({drive, tone, intensity}, updateTime) {
+   async update({drive, tone, intensity}, updateTime, timeConstant) {
+      if ((drive == null) && (tone == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "drive, tone, intensity"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       return false;
    }
 

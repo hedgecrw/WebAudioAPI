@@ -59,17 +59,21 @@ export class BandPassFilter extends EffectBase {
     * @param {number} lowerCutoffFrequency - Frequency below which audio content will be reduced
     * @param {number} upperCutoffFrequency - Frequency above which audio content will be reduced
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime) {
+   async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime, timeConstant) {
+      if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the BandPassFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (lowerCutoffFrequency != null)
          this.#lowerCutoffFrequency = lowerCutoffFrequency;
       if (upperCutoffFrequency != null)
          this.#upperCutoffFrequency = upperCutoffFrequency;
       const centerFrequency = this.#calcCenterFrequency();
-      this.#filterNode.frequency.setValueAtTime(centerFrequency, timeToUpdate);
-      this.#filterNode.Q.setValueAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate);
+      this.#filterNode.frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
+      this.#filterNode.Q.setTargetAtTime(centerFrequency / (this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
       return true;
    }
 

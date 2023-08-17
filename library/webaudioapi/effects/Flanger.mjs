@@ -12,17 +12,17 @@ import { EffectBase } from './EffectBase.mjs';
 export class Flanger extends EffectBase {
 
    /** @type {GainNode} */
-   #destination
+   #destination;
    /** @type {GainNode} */
-   #dry
+   #dry;
    /** @type {GainNode} */
-   #wet
+   #wet;
    /** @type {DelayNode} */
    #delayNode;
    /** @type {OscillatorNode} */
    #lfo;
    /** @type {GainNode} */
-   #feedback
+   #feedback;
 
    /**
     * Constructs a new {@link Flanger} effect object.
@@ -40,7 +40,7 @@ export class Flanger extends EffectBase {
       this.#wet.gain.value = 0.2;
       this.#feedback.gain.value = 0;
       this.#delayNode.delayTime.value = 0;
-      this.#lfo.type = "sine";
+      this.#lfo.type = 'sine';
       this.#lfo.start();
 
       this.#dry.connect(this.#wet);
@@ -61,7 +61,7 @@ export class Flanger extends EffectBase {
    static getParameters() {
       return [
          { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-         { name: 'shape', type: 'string', validValues: ["sine", "triangle"], defaultValue: "sine" },
+         { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
          { name: 'delayOffset', type: 'number', validValues: [0, 0.015], defaultValue: 0 },
          { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
          { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
@@ -85,19 +85,26 @@ export class Flanger extends EffectBase {
     * @param {number} variableFeedback - Percentage of processed signal to be fed back into the flanger circuit
     * @param {number} intensity - Ratio of flangered-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime) {
+   async update({rate, shape, delayOffset, variableFeedback, intensity}, updateTime, timeConstant) {
+      if ((rate == null) && (shape == null) && (delayOffset == null) && (variableFeedback == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Flanger effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
+      if ((shape != 'sine') && (shape != 'triangle'))
+         throw new WebAudioApiErrors.WebAudioValueError('Flanger effect "shape" parameter must take one of the following values: "sine, "triangle"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (rate != null)
-         this.#lfo.frequency.value = rate; 
+         this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
       if (shape != null) 
-         this.#lfo.type = shape == 0 ? "sine" : "triangle";
+         this.#lfo.type = shape;
       if (delayOffset != null)
-         this.#delayNode.delayTime.value = delayOffset * 1;
+         this.#delayNode.delayTime.setTargetAtTime(delayOffset * 1, timeToUpdate, timeConstantTarget);
       if (variableFeedback != null)
-         this.#feedback.gain.value = variableFeedback;
+         this.#feedback.gain.setTargetAtTime(variableFeedback, timeToUpdate, timeConstantTarget);
       if (intensity != null)
-         this.#wet.gain.value = intensity;
+         this.#wet.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
       return false;
    }
 

@@ -144,14 +144,15 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     * 
     * @param {string} effectName - Name of the track effect to be updated
     * @param {Object} effectOptions - Effect-specific options as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
-    * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} updateTime - Global API time at which to update the effect
+    * @param {number} timeConstant - Time constant defining an exponential approach to the target
     * @memberof Track
     * @instance
     */
-   async function updateEffect(effectName, effectOptions, updateTime) {
+   async function updateEffect(effectName, effectOptions, updateTime, timeConstant) {
       for (const effect of effects)
          if (effect.name == effectName) {
-            await effect.update(effectOptions, updateTime);
+            await effect.update(effectOptions, updateTime, timeConstant);
             return;
          }
       throw new WebAudioApiErrors.WebAudioTargetError(`The target track effect (${effectName}) does not exist`);

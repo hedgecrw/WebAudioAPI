@@ -51,13 +51,16 @@ export class Panning extends EffectBase {
     * 
     * @param {number} leftToRightRatio - Ratio of sound output from the left speaker to the right speaker as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({leftToRightRatio}, updateTime) {
+   async update({leftToRightRatio}, updateTime, timeConstant) {
       if (leftToRightRatio == null)
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       const panningValue = 2.0 * (leftToRightRatio - 0.5);
-      this.#panningNode.pan.setValueAtTime(panningValue, updateTime == null ? this.audioContext.currentTime : updateTime);
+      this.#panningNode.pan.setTargetAtTime(panningValue, timeToUpdate, timeConstantTarget);
       return true;
    }
 

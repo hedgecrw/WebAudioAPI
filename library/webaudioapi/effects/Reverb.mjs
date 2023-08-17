@@ -48,9 +48,14 @@ export class Reverb extends EffectBase {
     * @param {number} lowCutoffFrequency - Frequency below which to block acoustic reverb content
     * @param {number} intensity - Ratio of reverbed-to-original sound as a percentage between [0.0, 1.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
+    * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime) {
+   async update({preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity}, updateTime, timeConstant) {
+      if ((preDelay == null) && (decay ==  null) && (highCutoffFrequency == null) && (lowCutoffFrequency ==  null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Reverb effect without at least one of the following parameters: "preDelay, decay, highCutoffFrequency, lowCutoffFrequency, intensity"');
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       return false;
    }
 

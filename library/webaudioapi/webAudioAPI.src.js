@@ -4,6 +4,7 @@ import { loadEffect, getEffectParameters } from './modules/Effect.mjs';
 import { loadInstrument } from './modules/Instrument.mjs';
 import * as WebAudioApiErrors from './modules/Errors.mjs';
 import { getAnalyzerFor } from './modules/Analysis.mjs';
+import { getEncoderFor } from './modules/Encoder.mjs';
 import { version } from '../../package.json';
 
 /**
@@ -495,7 +496,7 @@ export class WebAudioAPI {
       if (!Object.values(EffectType).includes(Number(effectType)))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target effect type identifier (${effectType}) does not exist`);
       const existingEffect = await this.removeMasterEffect(effectName);
-      const newEffect = existingEffect ? existingEffect : await loadEffect(this.#audioContext, effectName, Number(effectType));
+      const newEffect = existingEffect || await loadEffect(this.#audioContext, effectName, Number(effectType));
       newEffect.output.connect(this.#compressorNode);
       if (this.#effects.length) {
          const previousEffect = this.#effects.slice(-1)[0];
@@ -883,6 +884,183 @@ export class WebAudioAPI {
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       return this.#tracks[trackName].recordMidiClip(Number(startTime), duration ? Number(duration) : undefined);
+   }
+
+   /**
+    * Schedules an audio recording to be executed on the cumulative output of the specified audio
+    * track for some duration of time.
+    * 
+    * If the `trackName` parameter is not specified or is set to `null`, the audio recording will
+    * include the cumulative output of **all** audio tracks and effects.
+    * 
+    * If the `startTime` parameter is not specified or is set to `null`, the audio recording will
+    * begin immediately.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the audio recording will
+    * continue until manually stopped by the {@link AudioRecording#finalize finalize()} function
+    * on the returned {@link AudioRecording} object.
+    * 
+    * Note that the recorded audio **will** include **all** existing effects.
+    * 
+    * @param {string} [trackName] - Name of the track from which to record all audio output
+    * @param {number} [startTime] - Global API time at which to start recording the audio output
+    * @param {number} [duration] - Number of seconds for which to continue recording the audio output
+    * @returns {AudioRecording} Reference to an {@link AudioRecording} object representing the audio recording
+    * @see {@link AudioRecording}
+    */
+   recordOutput(trackName, startTime, duration) {
+
+      /**
+       * Object containing all data needed to render a full audio recording.
+       * @namespace AudioRecording
+       * @global
+       */
+
+      // Forward this request to the indicated track, if specified
+      if (trackName) {
+         if (!(trackName in this.#tracks))
+            throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+         return this.#tracks[trackName].recordOutput(startTime, duration);
+      }
+
+      // Audio recording-local variable definitions
+      let recorderDestination = this.#audioContext.createMediaStreamDestination();
+      let recorder = new MediaRecorder(recorderDestination.stream), isRecording = true;
+      let audioData = null, recordedDuration = null, completionCallback = null;
+      const audioContext = this.#audioContext, analysisNode = this.#analysisNode;
+
+      // Private audio data handling functions
+      function startRecording() {
+         if (startTime >= (audioContext.currentTime + 0.001))
+            setTimeout(startRecording, 1);
+         else {
+            startTime = audioContext.currentTime;
+            recorder.start(duration ? (1000 * duration) : undefined);
+         }
+      }
+
+      recorder.ondataavailable = (event) => {
+         if (!audioData) {
+            audioData = event.data;
+            recordedDuration = duration || (audioContext.currentTime - startTime);
+            finalize();
+         }
+         isRecording = false;
+      };
+
+      recorder.onstop = async () => {
+         analysisNode.disconnect(recorderDestination);
+         if (completionCallback)
+            completionCallback(this);
+         completionCallback = null;
+         recorderDestination = null;
+         recorder = null;
+      };
+
+      /**
+       * Returns a {@link Blob} containing all of the recorded audio data.
+       * 
+       * @returns {Blob} Buffer containing all recorded audio data
+       * @memberof AudioRecording
+       * @instance
+       */
+      function getRawData() {
+         if (!recordedDuration)
+            throw new WebAudioApiErrors.WebAudioRecordingError('Cannot retrieve raw data from this audio recording because recording has not yet completed');
+         return audioData;
+      }
+
+      /**
+       * Returns the total duration of the audio recording in seconds.
+       * 
+       * @returns {number} Duration of the audio recording in seconds
+       * @memberof AudioRecording
+       * @instance
+       */
+      function getDuration() {
+         if (!recordedDuration)
+            throw new WebAudioApiErrors.WebAudioRecordingError('Cannot retrieve duration of this audio recording because recording has not yet completed');
+         return recordedDuration;
+      }
+
+      /**
+       * Stops recording any future audio data within the {@link AudioRecording}, finalizes the
+       * internal storage of all recorded data, and calls the user-completion notification
+       * callback, if registered.
+       * 
+       * Note that this function is called automatically if the original call to
+       * {@link Track#recordOutput recordOutput()} specified a concrete duration for the
+       * recording. If no duration was specified, then this function **must** be called in order
+       * to stop recording. An {@link AudioRecording} is unable to be used or played back until
+       * this function has been called.
+       * 
+       * @memberof AudioRecording
+       * @instance
+       */
+      async function finalize() {
+         if (duration) {
+            while ((startTime + duration) > audioContext.currentTime)
+               await new Promise(r => setTimeout(r, 10));
+         }
+         if (recorder.state != 'inactive') {
+            recorder.stop();
+            while (isRecording)
+               await new Promise(r => setTimeout(r, 1));
+         }
+      }
+
+      /**
+       * Allows a user to register a callback for notification when all audio recording activities
+       * have been completed for this {@link AudioRecording}. This corresponds to the time when the
+       * {@link AudioRecording#finalize finalize()} function gets called, either manually or
+       * automatically.
+       * 
+       * A user-defined notification callback will be called with a single parameter which is a
+       * reference to this {@link AudioRecording}.
+       * 
+       * @param {RecordCompleteCallback} notificationCallback - Callback to fire when this recording has completed
+       * @memberof AudioRecording
+       * @instance
+       */
+      function notifyWhenComplete(notificationCallback) {
+         if (!recordedDuration)
+            completionCallback = notificationCallback;
+         else
+            notificationCallback(this);
+      }
+
+      /**
+       * Encodes this {@link AudioRecording} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+       * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
+       * specified in the `encodingType` parameter.
+       * 
+       * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+       * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+       * @memberof AudioRecording
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+       * @see {@link module:Constants.EncodingType EncodingType}
+       */
+      async function getEncodedData(encodingType) {
+         if (!Object.values(EncodingType).includes(Number(encodingType)))
+            throw new WebAudioApiErrors.WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+         if (!recordedDuration || !(audioData instanceof Blob))
+            throw new WebAudioApiErrors.WebAudioRecordingError('Cannot render this audio recording because recording has not yet completed');
+         const offlineContext = new OfflineAudioContext(1, 44100 * recordedDuration, 44100);
+         const audioBuffer = await offlineContext.decodeAudioData(await audioData.arrayBuffer());
+         const clipSource = new AudioBufferSourceNode(offlineContext, { buffer: audioBuffer });
+         clipSource.connect(offlineContext.destination);
+         clipSource.start();
+         const renderedData = await offlineContext.startRendering();
+         return getEncoderFor(Number(encodingType)).encode(renderedData);
+      }
+
+      // Begin listening for incoming audio data
+      analysisNode.connect(recorderDestination);
+      startRecording();
+
+      // Returns an object containing functions and attributes within the AudioClip namespace
+      return { getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
    }
 
    /**

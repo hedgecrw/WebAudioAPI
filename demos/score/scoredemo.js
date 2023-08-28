@@ -150,6 +150,25 @@ window.stop = async function() {
    await window.audioAPI.updateInstrument('defaultTrack', instrumentSelector.options[instrumentSelector.selectedIndex].value);
 }
 
+window.startRecord = function() {
+   document.getElementById('startRecordButton').classList.add('disabled');
+   document.getElementById('stopRecordButton').classList.remove('disabled');
+   window.audioData = window.audioAPI.recordOutput();
+}
+
+window.stopRecord = async function() {
+   await window.audioData.finalize();
+   const encodingTypes = window.audioAPI.getAvailableEncoders();
+   document.getElementById('startRecordButton').classList.remove('disabled');
+   document.getElementById('stopRecordButton').classList.add('disabled');
+   const encodedBlob = await window.audioData.getEncodedData(encodingTypes.WAV);
+   const link = document.createElement('a');
+   link.download = 'AudioOutput.wav';
+   link.href = URL.createObjectURL(encodedBlob);
+   link.click();
+   URL.revokeObjectURL(link.href);
+}
+
 window.onload = () => {
    window.audioAPI = new WebAudioAPI();
    window.audioAPI.createTrack('defaultTrack');

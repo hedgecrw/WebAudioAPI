@@ -119,7 +119,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     */
    async function applyEffect(effectName, effectType) {
       const existingEffect = await this.removeEffect(effectName);
-      const newEffect = existingEffect ? existingEffect : await loadEffect(audioContext, effectName, effectType);
+      const newEffect = existingEffect || await loadEffect(audioContext, effectName, effectType);
       newEffect.output.connect(trackAudioSink);
       if (effects.length) {
          const previousEffect = effects.slice(-1)[0];
@@ -541,7 +541,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       recorder.ondataavailable = (event) => {
          if (!audioData) {
             audioData = event.data;
-            recordedDuration = duration ? duration : (audioContext.currentTime - startTime);
+            recordedDuration = duration || (audioContext.currentTime - startTime);
             finalize();
          }
       };
@@ -557,9 +557,9 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
       };
 
       /**
-       * Returns an {@link ArrayBuffer} containing all of the recorded audio data.
+       * Returns a {@link Blob} containing all of the recorded audio data.
        * 
-       * @returns {ArrayBuffer} Buffer containing all recorded audio data
+       * @returns {Blob} Buffer containing all recorded audio data
        * @memberof AudioClip
        * @instance
        */
@@ -657,6 +657,164 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
 
       // Returns an object containing functions and attributes within the AudioClip namespace
       return { clipType: 'audio', getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
+   }
+
+   /**
+    * Schedules an audio recording to be executed on the cumulative output of the current track
+    * for some duration of time.
+    * 
+    * If the `duration` parameter is not specified or is set to `null`, the audio recording will
+    * continue until manually stopped by the {@link AudioRecording#finalize finalize()} function
+    * on the returned {@link AudioRecording} object.
+    * 
+    * Note that the recorded audio **will** include **all** effects that exist on the track.
+    * 
+    * @param {number} startTime - Global API time at which to start recording the audio output
+    * @param {number} [duration] - Number of seconds for which to continue recording the audio output
+    * @returns {AudioRecording} Reference to an {@link AudioRecording} object representing the audio recording
+    * @memberof Track
+    * @instance
+    * @see {@link AudioRecording}
+    */
+   function recordOutput(startTime, duration) {
+
+      /**
+       * Object containing all data needed to render a full audio recording.
+       * @namespace AudioRecording
+       * @global
+       */
+
+      // Audio recording-local variable definitions
+      let recorderDestination = audioContext.createMediaStreamDestination();
+      let recorder = new MediaRecorder(recorderDestination.stream);
+      let audioData = null, recordedDuration = null, completionCallback = null;
+
+      // Private audio data handling functions
+      function startRecording() {
+         if (startTime >= (audioContext.currentTime + 0.001))
+            setTimeout(startRecording, 1);
+         else
+            recorder.start(duration ? (1000 * duration) : undefined);
+      }
+
+      recorder.ondataavailable = (event) => {
+         if (!audioData) {
+            audioData = event.data;
+            recordedDuration = duration || (audioContext.currentTime - startTime);
+            finalize();
+         }
+      };
+
+      recorder.onstop = async () => {
+         trackAudioSink.disconnect(recorderDestination);
+         if (completionCallback)
+            completionCallback(this);
+         completionCallback = null;
+         recorderDestination = null;
+         recorder = null;
+      };
+
+      /**
+       * Returns a {@link Blob} containing all of the recorded audio data.
+       * 
+       * @returns {Blob} Buffer containing all recorded audio data
+       * @memberof AudioRecording
+       * @instance
+       */
+      function getRawData() {
+         if (!recordedDuration)
+            throw new WebAudioApiErrors.WebAudioRecordingError('Cannot retrieve raw data from this audio recording because recording has not yet completed');
+         return audioData;
+      }
+
+      /**
+       * Returns the total duration of the audio recording in seconds.
+       * 
+       * @returns {number} Duration of the audio recording in seconds
+       * @memberof AudioRecording
+       * @instance
+       */
+      function getDuration() {
+         if (!recordedDuration)
+            throw new WebAudioApiErrors.WebAudioRecordingError('Cannot retrieve duration of this audio recording because recording has not yet completed');
+         return recordedDuration;
+      }
+
+      /**
+       * Stops recording any future audio data within the {@link AudioRecording}, finalizes the
+       * internal storage of all recorded data, and calls the user-completion notification
+       * callback, if registered.
+       * 
+       * Note that this function is called automatically if the original call to
+       * {@link Track#recordOutput recordOutput()} specified a concrete duration for the
+       * recording. If no duration was specified, then this function **must** be called in order
+       * to stop recording. An {@link AudioRecording} is unable to be used or played back until
+       * this function has been called.
+       * 
+       * @memberof AudioRecording
+       * @instance
+       */
+      async function finalize() {
+         if (duration) {
+            while ((startTime + duration) > audioContext.currentTime)
+               await new Promise(r => setTimeout(r, 10));
+         }
+         if (recorder.state != 'inactive')
+            recorder.stop();
+      }
+
+      /**
+       * Allows a user to register a callback for notification when all audio recording activities
+       * have been completed for this {@link AudioRecording}. This corresponds to the time when the
+       * {@link AudioRecording#finalize finalize()} function gets called, either manually or
+       * automatically.
+       * 
+       * A user-defined notification callback will be called with a single parameter which is a
+       * reference to this {@link AudioRecording}.
+       * 
+       * @param {RecordCompleteCallback} notificationCallback - Callback to fire when this recording has completed
+       * @memberof AudioRecording
+       * @instance
+       */
+      function notifyWhenComplete(notificationCallback) {
+         if (!recordedDuration)
+            completionCallback = notificationCallback;
+         else
+            notificationCallback(this);
+      }
+
+      /**
+       * Encodes this {@link AudioRecording} into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+       * containing raw audio data according to the {@link module:Constants.EncodingType EncodingType}
+       * specified in the `encodingType` parameter.
+       * 
+       * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+       * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+       * @memberof AudioRecording
+       * @instance
+       * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+       * @see {@link module:Constants.EncodingType EncodingType}
+       */
+      async function getEncodedData(encodingType) {
+         if (!Object.values(EncodingType).includes(Number(encodingType)))
+            throw new WebAudioApiErrors.WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+         if (!recordedDuration || !(audioData instanceof Blob))
+            throw new WebAudioApiErrors.WebAudioRecordingError('Cannot render this audio recording because recording has not yet completed');
+         const offlineContext = new OfflineAudioContext(1, 44100 * recordedDuration, 44100);
+         const audioBuffer = await offlineContext.decodeAudioData(await audioData.arrayBuffer());
+         const clipSource = new AudioBufferSourceNode(offlineContext, { buffer: audioBuffer });
+         clipSource.connect(offlineContext.destination);
+         clipSource.start();
+         const renderedData = await offlineContext.startRendering();
+         return getEncoderFor(Number(encodingType)).encode(renderedData);
+      }
+
+      // Begin listening for incoming audio data
+      trackAudioSink.connect(recorderDestination);
+      startRecording();
+
+      // Returns an object containing functions and attributes within the AudioClip namespace
+      return { getRawData, getDuration, finalize, getEncodedData, notifyWhenComplete };
    }
 
    /**
@@ -774,8 +932,8 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
        * @instance
        */
       name,
-      updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync,
-      playNote, playClip, playFile, recordMidiClip, recordAudioClip, connectToMidiDevice, disconnectFromMidiDevice,
+      updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync, playNote,
+      playClip, playFile, recordMidiClip, recordAudioClip, recordOutput, connectToMidiDevice, disconnectFromMidiDevice,
       connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
    };
 }

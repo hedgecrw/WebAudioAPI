@@ -686,15 +686,17 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
 
       // Audio recording-local variable definitions
       let recorderDestination = audioContext.createMediaStreamDestination();
-      let recorder = new MediaRecorder(recorderDestination.stream);
+      let recorder = new MediaRecorder(recorderDestination.stream), isRecording = true;
       let audioData = null, recordedDuration = null, completionCallback = null;
 
       // Private audio data handling functions
       function startRecording() {
          if (startTime >= (audioContext.currentTime + 0.001))
             setTimeout(startRecording, 1);
-         else
+         else {
+            startTime = audioContext.currentTime;
             recorder.start(duration ? (1000 * duration) : undefined);
+         }
       }
 
       recorder.ondataavailable = (event) => {
@@ -703,6 +705,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
             recordedDuration = duration || (audioContext.currentTime - startTime);
             finalize();
          }
+         isRecording = false;
       };
 
       recorder.onstop = async () => {
@@ -759,8 +762,11 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
             while ((startTime + duration) > audioContext.currentTime)
                await new Promise(r => setTimeout(r, 10));
          }
-         if (recorder.state != 'inactive')
+         if (recorder.state != 'inactive') {
             recorder.stop();
+            while (isRecording)
+               await new Promise(r => setTimeout(r, 1));
+         }
       }
 
       /**

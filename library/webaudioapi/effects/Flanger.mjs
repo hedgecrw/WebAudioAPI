@@ -15,40 +15,47 @@ export class Flanger extends EffectBase {
    #destination;
    /** @type {GainNode} */
    #dry;
-   /** @type {GainNode} */
-   #wet;
    /** @type {DelayNode} */
-   #delayNode;
+   #delay;
    /** @type {OscillatorNode} */
    #lfo;
    /** @type {GainNode} */
-   #feedback;
+   #lfoGain;
+   /** @type {GainNode} */
+   #feedBack;
+   /** @type {GainNode} */
+   #wet;
 
    /**
     * Constructs a new {@link Flanger} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+   
+      // Set up dry signal destination
+      this.#dry = new GainNode(audioContext, {gain: 1});
       this.#destination = new GainNode(audioContext);
-      this.#dry = new GainNode(audioContext);
-      this.#wet = new GainNode(audioContext);
-      this.#delayNode = new DelayNode(audioContext);
-      this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
-      this.#feedback = new GainNode(audioContext);
-
-      this.#dry.gain.value = 1;
-      this.#wet.gain.value = 0.2;
-      this.#feedback.gain.value = 0;
-      this.#delayNode.delayTime.value = 0;
-      this.#lfo.type = 'sine';
-      this.#lfo.start();
-
-      this.#dry.connect(this.#wet);
       this.#dry.connect(this.#destination);
-      this.#wet.connect(this.#delayNode).connect(this.#destination);
-      this.#delayNode.connect(this.#feedback);
-      this.#lfo.connect(this.#delayNode);
-      this.#feedback.connect(this.#wet);
+
+      // Set up delay 
+      this.#delay = new DelayNode(audioContext, {delayTime: 0});
+      this.#dry.connect(this.#delay);
+
+      // Create feedback loop
+      this.#feedBack = new GainNode(audioContext, {gain: 0});
+      this.#delay.connect(this.#feedBack);
+      this.#feedBack.connect(this.#delay);
+
+      // Set up lfo
+      this.#lfo = new OscillatorNode(audioContext, {frequency: 0});
+      this.#lfoGain = new GainNode(audioContext, {gain: 0.0005});
+      this.#lfo.connect(this.#lfoGain).connect(this.#delay.delayTime);
+      this.#lfo.start();
+      
+      // Set up wet signal 
+      this.#wet = new GainNode(audioContext, {gain: 0});
+      this.#delay.connect(this.#wet);
+      this.#wet.connect(this.#destination);
    }
 
    /**
@@ -60,11 +67,11 @@ export class Flanger extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-         { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
-         { name: 'delayOffset', type: 'number', validValues: [0, 0.015], defaultValue: 0 },
+         { name: 'rate', type: 'number', validValues: [0, 1], defaultValue: 0 },
+         { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
+         { name: 'delayOffset', type: 'number', validValues: [0, 0.007], defaultValue: 0 },
          { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
-         { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+         { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0 },
       ];
    }
 
@@ -100,12 +107,12 @@ export class Flanger extends EffectBase {
       if (shape != null) 
          this.#lfo.type = shape;
       if (delayOffset != null)
-         this.#delayNode.delayTime.setTargetAtTime(delayOffset * 1, timeToUpdate, timeConstantTarget);
+         this.#delay.delayTime.setTargetAtTime(delayOffset, timeToUpdate, timeConstantTarget);
       if (variableFeedback != null)
-         this.#feedback.gain.setTargetAtTime(variableFeedback, timeToUpdate, timeConstantTarget);
+         this.#feedBack.gain.setTargetAtTime(variableFeedback, timeToUpdate, timeConstantTarget);
       if (intensity != null)
          this.#wet.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
-      return false;
+      return true;
    }
 
    getInputNode() {

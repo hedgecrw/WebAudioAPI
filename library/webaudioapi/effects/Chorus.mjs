@@ -12,11 +12,51 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Chorus extends EffectBase {
 
+   /** @type {GainNode} */
+   #destination;
+   /** @type {GainNode} */
+   #dry;
+   /** @type {DelayNode} */
+   #delay;
+   /** @type {OscillatorNode} */
+   #lfo;
+   /** @type {GainNode} */
+   #lfoGain;
+   /** @type {GainNode} */
+   #feedBack;
+   /** @type {GainNode} */
+   #wet;
+
    /**
     * Constructs a new {@link Chorus} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+
+      // Set up dry signal destination
+      this.#dry = new GainNode(audioContext, { gain: 1 });
+      this.#destination = new GainNode(audioContext);
+      this.#dry.connect(this.#destination);
+
+      // Set up delay 
+      this.#delay = new DelayNode(audioContext, { delayTime: 0 });
+      this.#dry.connect(this.#delay);
+
+      // Create feedback loop
+      this.#feedBack = new GainNode(audioContext, { gain: 0 });
+      this.#delay.connect(this.#feedBack);
+      this.#feedBack.connect(this.#delay);
+
+      // Set up lfo
+      this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
+      this.#lfoGain = new GainNode(audioContext, { gain: 0.001 });
+      this.#lfo.connect(this.#lfoGain).connect(this.#delay.delayTime);
+      this.#lfo.start();
+
+      // Set up wet signal 
+      this.#wet = new GainNode(audioContext, { gain: 0 });
+      this.#delay.connect(this.#wet);
+      this.#wet.connect(this.#destination);
    }
 
    /**
@@ -28,11 +68,11 @@ export class Chorus extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'rate', type: 'number', validValues: [0, 2], defaultValue: 0 },
-         { name: 'shape', type: 'string', validValues: ['sine', 'triangle'], defaultValue: 'sine' },
+         { name: 'rate', type: 'number', validValues: [0, 1], defaultValue: 0 },
+         { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
          { name: 'delayOffset', type: 'number', validValues: [0, 0.05], defaultValue: 0 },
          { name: 'variableFeedback', type: 'number', validValues: [0, 1], defaultValue: 0 },
-         { name: 'intensity', type: 'number', validValues: [0, 2], defaultValue: 0 },
+         { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0 },
       ];
    }
 
@@ -61,14 +101,24 @@ export class Chorus extends EffectBase {
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Chorus effect without at least one of the following parameters: "rate, shape, delayOffset, variableFeedback, intensity"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      return false;
+      if (rate != null)
+         this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+      if (shape != null)
+         this.#lfo.type = shape;
+      if (delayOffset != null)
+         this.#delay.delayTime.setTargetAtTime(delayOffset, timeToUpdate, timeConstantTarget);
+      if (variableFeedback != null)
+         this.#feedBack.gain.setTargetAtTime(variableFeedback, timeToUpdate, timeConstantTarget);
+      if (intensity != null)
+         this.#wet.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
+      return true;
    }
 
    getInputNode() {
-      return;
+      return this.#dry;
    }
 
    getOutputNode() {
-      return;
+      return this.#destination;
    }
 }

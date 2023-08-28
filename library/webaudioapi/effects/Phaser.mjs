@@ -86,12 +86,12 @@ export class Phaser extends EffectBase {
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({speed, feedback, widthLower, widthUpper, intensity}, updateTime, timeConstant) {
+   async update({poles, frequency, rate, depth, feedback}, updateTime, timeConstant) {
       if ((poles == null) && (frequency == null) && (rate == null) && (depth == null) && (feedback == null))
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "poles, frequency, rate, depth, feedback"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      if (poles != null);
+      if (poles != null)
          console.log(Math.round(poles));
       if (frequency != null)
          this.#pole.frequencysetTargetAtTime(frequency, timeToUpdate, timeConstantTarget);

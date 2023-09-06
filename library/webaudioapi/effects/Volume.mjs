@@ -14,6 +14,10 @@ export class Volume extends EffectBase {
    /** @type {GainNode} */
    #volumeNode;
 
+   // Parameter limits
+   static minVolume = 0;
+   static maxVolume = 1;
+
    /**
     * Constructs a new {@link Volume} effect object.
     */
@@ -31,12 +35,12 @@ export class Volume extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 1 }
+         { name: 'intensity', type: 'number', validValues: [Volume.minVolume, Volume.maxVolume], defaultValue: Volume.maxVolume }
       ];
    }
 
    async load() {
-      this.#volumeNode.gain.value = 1.0;
+      this.#volumeNode.gain.value = Volume.maxVolume;
    }
 
    /* eslint no-empty-pattern: "off" */
@@ -55,6 +59,10 @@ export class Volume extends EffectBase {
    async update({intensity}, updateTime, timeConstant) {
       if (intensity == null)
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Volume effect without at least one of the following parameters: "intensity"');
+      if (intensity < Volume.minVolume)
+         throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be less than ${Volume.minVolume}`);
+      else if (intensity > Volume.maxVolume)
+         throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be greater than ${Volume.maxVolume}`);
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       this.#volumeNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);

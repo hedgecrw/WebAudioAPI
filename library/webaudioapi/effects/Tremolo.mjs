@@ -14,20 +14,27 @@ import { EffectBase } from './EffectBase.mjs';
 export class Tremolo extends EffectBase {
 
    /** @type {OscillatorNode} */
-   #lfo;
+   #lfoNode;
    /** @type {GainNode} */
-   #gain;
+   #normalizationNode;
+   /** @type {GainNode} */
+   #depthNode;
+
+   // Parameter limits
+   static minRate = 0;
+   static maxRate = 20;
+   static minIntensity = 0;
+   static maxIntensity = 1;
 
    /**
     * Constructs a new {@link Tremolo} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
-      this.#lfo = audioContext.createOscillator();
-      this.#gain = audioContext.createGain();
-      this.#lfo.frequency.value = 0;
-      this.#lfo.connect(this.#gain.gain);
-      this.#lfo.start();
+      this.#normalizationNode = new GainNode(audioContext);
+      this.#depthNode = new GainNode(audioContext);
+      this.#lfoNode = new OscillatorNode(audioContext);
+      this.#lfoNode.connect(this.#depthNode).connect(this.#normalizationNode.gain);
    }
 
    /**
@@ -39,12 +46,17 @@ export class Tremolo extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'rate', type: 'number', validValues: [0, 20], defaultValue: 0 },
+         { name: 'rate', type: 'number', validValues: [Tremolo.minRate, Tremolo.maxRate], defaultValue: 10 },
+         { name: 'intensity', type: 'number', validValues: [Tremolo.minIntensity, Tremolo.maxIntensity], defaultValue: 0 }
       ];
    }
 
    async load() {
-      return;
+      this.#lfoNode.type = 'sine';
+      this.#lfoNode.frequency.value = 10;
+      this.#normalizationNode.gain.value = 1;
+      this.#depthNode.gain.value = 0;
+      this.#lfoNode.start();
    }
 
    /**
@@ -54,25 +66,43 @@ export class Tremolo extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal
+    * @param {number} rate - Frequency at which an oscillator modulates the tremolo signal in Hz between [0, 40]
+    * @param {number} intensity - Intensity of the effect as a percentage between [0, 1]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({ rate }, updateTime, timeConstant) {
-      if (rate == null)
-         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Tremolo effect without at least one of the following parameters: "rate"');
+   async update({ rate, intensity }, updateTime, timeConstant) {
+      if ((rate == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Tremolo effect without at least one of the following parameters: "rate, intensity"');
+      if (rate != null) {
+         if (rate < Tremolo.minRate)
+            throw new WebAudioApiErrors.WebAudioValueError(`Rate value cannot be less than ${Tremolo.minRate}`);
+         else if (rate > Tremolo.maxRate)
+            throw new WebAudioApiErrors.WebAudioValueError(`Rate value cannot be greater than ${Tremolo.maxRate}`);
+      }
+      if (intensity != null) {
+         if (intensity < Tremolo.minIntensity)
+            throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be less than ${Tremolo.minIntensity}`);
+         else if (intensity > Tremolo.maxIntensity)
+            throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be greater than ${Tremolo.maxIntensity}`);
+      }
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+      if (rate != null)
+         this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+      if (intensity != null) {
+         this.#depthNode.gain.setTargetAtTime(0.5 * intensity, timeToUpdate, timeConstantTarget);
+         this.#normalizationNode.gain.setTargetAtTime(1.0 - (0.5 * intensity), timeToUpdate, timeConstantTarget);
+      }
       return true;
    }
 
    getInputNode() {
-      return this.#gain;
+      return this.#normalizationNode;
    }
 
    getOutputNode() {
-      return this.#gain;
+      return this.#normalizationNode;
    }
 }

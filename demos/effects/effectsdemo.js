@@ -1,5 +1,6 @@
 function changeParameter(event) {
-   const effectOptions = { [event.target.name]: Number(event.target.value) };
+   event.target.title = event.target.value;
+   const effectOptions = { [event.target.name]: event.target.name == 'shape' ? event.target.value : Number(event.target.value) };
    window.audioAPI.updateTrackEffect('defaultTrack', window.currentEffect, effectOptions);
 }
 
@@ -19,6 +20,7 @@ function changeEffect(effectType) {
       labelContainer.appendChild(optionLabel);
       if (effectOption.type == 'number') {
          const optionSelection = document.createElement('input');
+         optionSelection.title = effectOption.defaultValue;
          optionSelection.id = effectOption.name;
          optionSelection.name = effectOption.name;
          optionSelection.type = 'range';

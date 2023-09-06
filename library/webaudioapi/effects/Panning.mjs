@@ -16,6 +16,10 @@ export class Panning extends EffectBase {
    /** @type {StereoPannerNode} */
    #panningNode;
 
+   // Parameter limits
+   static panningLeft = 0;
+   static panningRight = 1;
+
    /**
     * Constructs a new {@link Panning} effect object.
     */
@@ -33,7 +37,7 @@ export class Panning extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'leftToRightRatio', type: 'number', validValues: [0, 1], defaultValue: 0.5 }
+         { name: 'leftToRightRatio', type: 'number', validValues: [Panning.panningLeft, Panning.panningRight], defaultValue: 0.5 * (Panning.panningRight - Panning.panningLeft) }
       ];
    }
 
@@ -57,10 +61,13 @@ export class Panning extends EffectBase {
    async update({leftToRightRatio}, updateTime, timeConstant) {
       if (leftToRightRatio == null)
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Panning effect without at least one of the following parameters: "leftToRightRatio"');
+      if (leftToRightRatio < Panning.panningLeft)
+         throw new WebAudioApiErrors.WebAudioValueError(`Left-to-right-ratio value cannot be less than ${Panning.panningLeft}`);
+      else if (leftToRightRatio > Panning.panningRight)
+         throw new WebAudioApiErrors.WebAudioValueError(`Left-to-right-ratio value cannot be greater than ${Panning.panningRight}`);
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      const panningValue = 2.0 * (leftToRightRatio - 0.5);
-      this.#panningNode.pan.setTargetAtTime(panningValue, timeToUpdate, timeConstantTarget);
+      this.#panningNode.pan.setTargetAtTime(2.0 * (leftToRightRatio - 0.5), timeToUpdate, timeConstantTarget);
       return true;
    }
 

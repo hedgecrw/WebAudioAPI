@@ -15,6 +15,12 @@ export class HighPassFilter extends EffectBase {
    /** @type {BiquadFilterNode} */
    #filterNode;
 
+   // Parameter limits
+   static minFrequency = 0;
+   static maxFrequency = 22050;
+   static minResonance = 0.0001;
+   static maxResonance = 1000;
+
    /**
     * Constructs a new {@link HighPassFilter} effect object.
     */
@@ -32,14 +38,14 @@ export class HighPassFilter extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'cutoffFrequency', type: 'number', validValues: [0, 22050], defaultValue: 0 },
-         { name: 'resonance', type: 'number', validValues: [0, 1000], defaultValue: 0 }
+         { name: 'cutoffFrequency', type: 'number', validValues: [HighPassFilter.minFrequency, HighPassFilter.maxFrequency], defaultValue: HighPassFilter.minFrequency },
+         { name: 'resonance', type: 'number', validValues: [HighPassFilter.minResonance, HighPassFilter.maxResonance], defaultValue: HighPassFilter.minResonance }
       ];
    }
 
    async load() {
-      this.#filterNode.frequency.value = 0.0;
-      this.#filterNode.Q.value = 0.0001;
+      this.#filterNode.frequency.value = HighPassFilter.minFrequency;
+      this.#filterNode.Q.value = HighPassFilter.minResonance;
    }
 
    /**
@@ -49,8 +55,8 @@ export class HighPassFilter extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} cutoffFrequency - Frequency below which audio content will be reduced
-    * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0, 1000.0]
+    * @param {number} cutoffFrequency - Frequency below which audio content will be reduced between [0, 22050]
+    * @param {number} resonance - Amount of frequency exaggeration around the cutoff as a value between [0.0001, 1000.0]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -58,12 +64,24 @@ export class HighPassFilter extends EffectBase {
    async update({cutoffFrequency, resonance}, updateTime, timeConstant) {
       if ((cutoffFrequency == null) && (resonance == null))
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the HighPassFilter effect without at least one of the following parameters: "cutoffFrequency, resonance"');
+      if (cutoffFrequency != null) {
+         if (cutoffFrequency < HighPassFilter.minFrequency)
+            throw new WebAudioApiErrors.WebAudioValueError(`Cutoff frequency cannot be less than ${HighPassFilter.minFrequency}`);
+         else if (cutoffFrequency > HighPassFilter.maxFrequency)
+            throw new WebAudioApiErrors.WebAudioValueError(`Cutoff frequency cannot be greater than ${HighPassFilter.maxFrequency}`);
+      }
+      if (resonance != null) {
+         if (resonance < HighPassFilter.minResonance)
+            throw new WebAudioApiErrors.WebAudioValueError(`Resonance exaggeration cannot be less than ${HighPassFilter.minResonance}`);
+         else if (resonance > HighPassFilter.maxResonance)
+            throw new WebAudioApiErrors.WebAudioValueError(`Resonance exaggeration cannot be greater than ${HighPassFilter.maxResonance}`);
+      }
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (cutoffFrequency != null)
          this.#filterNode.frequency.setTargetAtTime(cutoffFrequency, timeToUpdate, timeConstantTarget);
       if (resonance != null)
-         this.#filterNode.Q.setTargetAtTime(Math.max(resonance, 0.0001), timeToUpdate, timeConstantTarget);
+         this.#filterNode.Q.setTargetAtTime(resonance, timeToUpdate, timeConstantTarget);
       return true;
    }
 

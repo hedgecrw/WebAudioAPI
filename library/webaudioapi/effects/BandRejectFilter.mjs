@@ -20,14 +20,16 @@ export class BandRejectFilter extends EffectBase {
    /** @type {number} */
    #upperCutoffFrequency;
 
+   // Parameter limits
+   static minFrequency = 1;
+   static maxFrequency = 22050;
+
    /**
     * Constructs a new {@link BandRejectFilter} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
       this.#filterNode = new BiquadFilterNode(audioContext, { type: 'notch' });
-      this.#lowerCutoffFrequency = 1.0;
-      this.#upperCutoffFrequency = 1.0;
    }
 
    /**
@@ -39,13 +41,15 @@ export class BandRejectFilter extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'lowerCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
-         { name: 'upperCutoffFrequency', type: 'number', validValues: [1, 22050], defaultValue: 1 }
+         { name: 'lowerCutoffFrequency', type: 'number', validValues: [BandRejectFilter.minFrequency, BandRejectFilter.maxFrequency], defaultValue: 148.5 },
+         { name: 'upperCutoffFrequency', type: 'number', validValues: [BandRejectFilter.minFrequency, BandRejectFilter.maxFrequency], defaultValue: 148.5 }
       ];
    }
 
    async load() {
-      this.#filterNode.frequency.value = 11025.0;
+      this.#lowerCutoffFrequency = 148.5;
+      this.#upperCutoffFrequency = 148.5;
+      this.#filterNode.frequency.value = 148.5;
       this.#filterNode.Q.value = 1000.0;
    }
 
@@ -56,8 +60,8 @@ export class BandRejectFilter extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} lowerCutoffFrequency - Frequency above which audio content will be reduced
-    * @param {number} upperCutoffFrequency - Frequency below which audio content will be reduced
+    * @param {number} lowerCutoffFrequency - Frequency above which audio content will be reduced between [1, 22050]
+    * @param {number} upperCutoffFrequency - Frequency below which audio content will be reduced between [1, 22050]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
@@ -65,22 +69,31 @@ export class BandRejectFilter extends EffectBase {
    async update({lowerCutoffFrequency, upperCutoffFrequency}, updateTime, timeConstant) {
       if ((lowerCutoffFrequency == null) && (upperCutoffFrequency == null))
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the BandRejectFilter effect without at least one of the following parameters: "lowerCutoffFrequency, upperCutoffFrequency"');
+      if (lowerCutoffFrequency != null) {
+         if (lowerCutoffFrequency < 20) {
+            lowerCutoffFrequency = 20;
+            if ((upperCutoffFrequency != null) && (upperCutoffFrequency < 20))
+               upperCutoffFrequency = 20;
+         }
+         if (((upperCutoffFrequency != null) && (lowerCutoffFrequency > upperCutoffFrequency)) || (lowerCutoffFrequency > this.#upperCutoffFrequency))
+            throw new WebAudioApiErrors.WebAudioValueError('Lower cutoff frequency cannot be greater than the upper cutoff frequency');
+      }
+      else if (upperCutoffFrequency < this.#lowerCutoffFrequency)
+         throw new WebAudioApiErrors.WebAudioValueError('Lower cutoff frequency cannot be greater than the upper cutoff frequency');
+      if ((lowerCutoffFrequency != null) && (lowerCutoffFrequency < BandRejectFilter.minFrequency))
+         throw new WebAudioApiErrors.WebAudioValueError(`Lower cutoff frequency cannot be less than ${BandRejectFilter.minFrequency}`);
+      if ((upperCutoffFrequency != null) && (upperCutoffFrequency > BandRejectFilter.maxFrequency))
+         throw new WebAudioApiErrors.WebAudioValueError(`Upper cutoff frequency cannot be greater than ${BandRejectFilter.maxFrequency}`);
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
       if (lowerCutoffFrequency != null)
          this.#lowerCutoffFrequency = lowerCutoffFrequency;
       if (upperCutoffFrequency != null)
          this.#upperCutoffFrequency = upperCutoffFrequency;
-      const centerFrequency = this.#calcCenterFrequency();
+      const centerFrequency = Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
       this.#filterNode.frequency.setTargetAtTime(centerFrequency, timeToUpdate, timeConstantTarget);
-      this.#filterNode.Q.setTargetAtTime((this.#upperCutoffFrequency - this.#lowerCutoffFrequency) / centerFrequency, timeToUpdate, timeConstantTarget);
+      this.#filterNode.Q.setTargetAtTime(centerFrequency / (0.0001 + this.#upperCutoffFrequency - this.#lowerCutoffFrequency), timeToUpdate, timeConstantTarget);
       return true;
-   }
-
-   #calcCenterFrequency() {
-      if (this.#upperCutoffFrequency / this.#lowerCutoffFrequency >= 1.1)
-         return Math.sqrt(this.#upperCutoffFrequency * this.#lowerCutoffFrequency);
-      return ((this.#upperCutoffFrequency + this.#lowerCutoffFrequency) / 2);
    }
 
    getInputNode() {

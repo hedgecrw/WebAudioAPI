@@ -12,36 +12,32 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Echo extends EffectBase {
 
+   /** @type {GainNode} */
+   #inputNode;
    /** @type {DelayNode} */
-   #delay;
+   #delayNode;
    /** @type {GainNode} */
-   #gain;
+   #feedbackNode;
    /** @type {GainNode} */
-   #destination;
+   #outputNode;
 
-   #echo = {
-      feedback: 0.2,
-      intensity: 0.2,
-      maxDuration: 1,
-   };
+   // Parameter limits
+   static minEchoTime = 0;
+   static maxEchoTime = 1;
+   static minFeedback = 0;
+   static maxFeedback = 0.95;
 
    /**
     * Constructs a new {@link Echo} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
-
-      this.#delay = new DelayNode(audioContext);
-      this.#delay.delayTime.value = this.#echo.feedback * this.#echo.maxDuration;
-
-      this.#gain = new GainNode(audioContext);
-      this.#gain.gain.value = this.#echo.intensity;
-
-      this.#destination = new GainNode(audioContext);
-      this.#destination.gain.value = 1;
-
-      this.#gain.connect(this.#delay);
-      this.#delay.connect(this.#gain).connect(this.#destination);
+      this.#inputNode = new GainNode(audioContext);
+      this.#outputNode = new GainNode(audioContext);
+      this.#delayNode = new DelayNode(audioContext, { maxDelayTime: Echo.maxEchoTime });
+      this.#feedbackNode = new GainNode(audioContext);
+      this.#inputNode.connect(this.#outputNode);
+      this.#inputNode.connect(this.#delayNode).connect(this.#feedbackNode).connect(this.#delayNode).connect(this.#outputNode);
    }
 
    /**
@@ -53,13 +49,15 @@ export class Echo extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'feedback', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
-         { name: 'intensity', type: 'number', validValues: [0, 1], defaultValue: 0.2 },
+         { name: 'echoTime', type: 'number', validValues: [Echo.minEchoTime, Echo.maxEchoTime], defaultValue: Echo.minEchoTime },
+         { name: 'intensity', type: 'number', validValues: [Echo.minFeedback, Echo.maxFeedback], defaultValue: Echo.minFeedback },
       ];
    }
 
    async load() {
-      return;
+      this.#inputNode.gain.value = this.#outputNode.gain.value = 1;
+      this.#delayNode.delayTime.value = Echo.minEchoTime;
+      this.#feedbackNode.gain.value = Echo.minFeedback;
    }
 
    /**
@@ -69,33 +67,41 @@ export class Echo extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} feedback - Amount of reflection fed back into the original sound
-    * @param {number} intensity - Ratio of echoed-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} echoTime - Number of seconds between the original audio and its first echo between [0, 1]
+    * @param {number} intensity - Percentage of the original audio that will be present in each consecutive echo between [0, 0.95]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({feedback, intensity}, updateTime, timeConstant) {
-      if ((feedback == null) && (intensity == null))
-         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "feedback, intensity"');
-      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
-      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      if (feedback != null) {
-         this.#echo.feedback = feedback;
-         this.#delay.delayTime.setTargetAtTime(this.#echo.feedback * this.#echo.maxDuration, timeToUpdate, timeConstantTarget);
+   async update({echoTime, intensity}, updateTime, timeConstant) {
+      if ((echoTime == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Echo effect without at least one of the following parameters: "echoTime, intensity"');
+      if (echoTime != null) {
+         if (echoTime < Echo.minEchoTime)
+            throw new WebAudioApiErrors.WebAudioValueError(`EchoTime value cannot be less than ${Echo.minEchoTime}`);
+         else if (echoTime > Echo.maxEchoTime)
+            throw new WebAudioApiErrors.WebAudioValueError(`EchoTime value cannot be greater than ${Echo.maxEchoTime}`);
       }
       if (intensity != null) {
-         this.#echo.intensity = intensity;
-         this.#gain.gain.setTargetAtTime(this.#echo.intensity, timeToUpdate, timeConstantTarget);
+         if (intensity < Echo.minFeedback)
+            throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be less than ${Echo.minFeedback}`);
+         else if (intensity > Echo.maxFeedback)
+            throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be greater than ${Echo.maxFeedback}`);
       }
+      const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
+      const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+      if (echoTime != null)
+         this.#delayNode.delayTime.setTargetAtTime(echoTime, timeToUpdate, timeConstantTarget);
+      if (intensity != null) 
+         this.#feedbackNode.gain.setTargetAtTime(intensity, timeToUpdate, timeConstantTarget);
       return true;
    }
 
    getInputNode() {
-      return this.#delay;
+      return this.#inputNode;
    }
 
    getOutputNode() {
-      return this.#destination;
+      return this.#outputNode;
    }
 }

@@ -13,6 +13,7 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Tremolo extends EffectBase {
 
+   // Effect-specific private variables
    /** @type {OscillatorNode} */
    #lfoNode;
    /** @type {GainNode} */

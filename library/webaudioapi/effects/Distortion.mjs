@@ -12,11 +12,29 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Distortion extends EffectBase {
 
+   // Effect-specific private variables
+   /** @type {GainNode} */
+   #outputNode;
+   /** @type {BiquadFilterNode} */
+   #preBandpassNode;
+   /** @type {WaveShaperNode} */
+   #distortionNode;
+
+   // Parameter limits
+   static minTone = 0;
+   static maxTone = 22050;
+   static minIntensity = 0;
+   static maxIntensity = 1;
+
    /**
     * Constructs a new {@link Distortion} effect object.
     */
    constructor(audioContext) {
       super(audioContext);
+      this.#outputNode = new GainNode(audioContext);
+      this.#preBandpassNode = new BiquadFilterNode(audioContext, { type: 'lowpass' });
+      this.#distortionNode = new WaveShaperNode(audioContext);
+      this.#preBandpassNode.connect(this.#distortionNode).connect(this.#outputNode);
    }
 
    /**
@@ -27,11 +45,22 @@ export class Distortion extends EffectBase {
     * @see {@link EffectParameter}
     */
    static getParameters() {
-      return [];
+      return [
+         { name: 'tone', type: 'number', validValues: [Distortion.minTone, Distortion.maxTone], defaultValue: 3000 },
+         { name: 'intensity', type: 'number', validValues: [Distortion.minIntensity, Distortion.maxIntensity], defaultValue: 0.5 }
+      ];
    }
 
    async load() {
-      return;
+      const driveValue = 0.5, n = 22050, deg = Math.PI / 180;
+      const k = driveValue * 100, curve = new Float32Array(n);
+      this.#preBandpassNode.frequency.value = 3000;
+      for (let i = 0; i < n; ++i) {
+         const x = i * 2 / n - 1;
+         curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+      }
+      this.#distortionNode.curve = curve;
+      this.#outputNode.gain.value = driveValue;
    }
 
    /**
@@ -41,26 +70,38 @@ export class Distortion extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} drive - Gain level for the distorted signal
-    * @param {boolean} tone - Whether to smooth distortion by adding tasty tone to it
-    * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0.0, 1.0]
+    * @param {number} tone - Low-pass cutoff frequency in Hz for filtering before distortion between [0, 22050]
+    * @param {number} intensity - Ratio of distorted-to-original sound as a percentage between [0, 1]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({drive, tone, intensity}, updateTime, timeConstant) {
-      if ((drive == null) && (tone == null) && (intensity == null))
-         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "drive, tone, intensity"');
+   async update({ tone, intensity }, updateTime, timeConstant) {
+      if ((tone == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Distortion effect without at least one of the following parameters: "tone, intensity"');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      return false;
+      if (tone != null)
+         this.#preBandpassNode.frequency.setTargetAtTime(tone, timeToUpdate, timeConstantTarget);
+      if (intensity != null) {
+         const n = 22050, deg = Math.PI / 180;
+         const k = intensity * 100, curve = new Float32Array(n);
+         for (let i = 0; i < n; ++i) {
+            const x = i * 2 / n - 1;
+            curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+         }
+         this.#distortionNode.curve = curve;
+         const gainOffset = (intensity < 0.5) ? (Math.exp(2.3 * (0.5 - intensity)) - 0.5) : (0.5 + (0.2 * (0.5 - intensity)));
+         this.#outputNode.gain.setTargetAtTime(gainOffset, timeToUpdate, timeConstantTarget);
+      }
+      return true;
    }
 
    getInputNode() {
-      return;
+      return this.#preBandpassNode;
    }
 
    getOutputNode() {
-      return;
+      return this.#outputNode;
    }
 }

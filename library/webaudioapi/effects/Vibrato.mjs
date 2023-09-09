@@ -12,6 +12,7 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Vibrato extends EffectBase {
 
+   // Effect-specific private variables
    /** @type {OscillatorNode} */
    #lfoNode;
    /** @type {DelayNode} */

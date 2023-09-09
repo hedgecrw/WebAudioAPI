@@ -12,6 +12,7 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Echo extends EffectBase {
 
+   // Effect-specific private variables
    /** @type {GainNode} */
    #inputNode;
    /** @type {DelayNode} */

@@ -89,7 +89,7 @@ export const Duration = {
  * @constant {Object.<string, number>}
  */
 export const EffectType = {
-   Reverb: 11, Delay: 12, Echo: 13,                                                 // Time-Based Effects
+   Reverb: 11, Delay: 12, Echo: 13, PitchShift: 14, Doppler: 15,                    // Time-Based Effects
    Chorus: 21, Tremolo: 22, Vibrato: 23, Flanger: 24, Phaser: 25,                   // Modulation Effects
    Panning: 31, Equalization: 32,                                                   // Spectral Effects
    Volume: 41, Compression: 42, Distortion: 43,                                     // Dynamic Effects

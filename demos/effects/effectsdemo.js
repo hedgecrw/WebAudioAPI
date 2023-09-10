@@ -1,11 +1,15 @@
 function changeParameter(event) {
-   event.target.title = event.target.value;
-   const effectOptions = { [event.target.name]: event.target.name == 'shape' ? event.target.value : Number(event.target.value) };
-   window.audioAPI.updateTrackEffect('defaultTrack', window.currentEffect, effectOptions);
+   if (window.currentEffect != 'Doppler') {
+      event.target.title = event.target.value;
+      const effectOptions = { [event.target.name]: event.target.name == 'shape' ? event.target.value : Number(event.target.value) };
+      window.audioAPI.updateTrackEffect('defaultTrack', window.currentEffect, effectOptions);
+   }
 }
 
 function changeEffect(effectType) {
+   const currentEffectSelection = document.getElementById('effectSelector');
    const effectOptionsContainer = document.getElementById('effectOptions');
+   const effectText = currentEffectSelection.options[currentEffectSelection.options.selectedIndex].innerText;
    while (effectOptionsContainer.firstChild)
       effectOptionsContainer.removeChild(effectOptionsContainer.firstChild);
    for (const effectOption of window.audioAPI.getAvailableEffectParameters(effectType)) {
@@ -52,10 +56,26 @@ function changeEffect(effectType) {
          valueContainer.appendChild(postSpan);
       }
    }
+   if (effectText == 'Doppler') {
+      const effectOptionContainer = document.createElement('tr');
+      const buttonContainer = document.createElement('td');
+      effectOptionContainer.appendChild(buttonContainer);
+      const applyButton = document.createElement('button');
+      applyButton.textContent = 'Apply';
+      applyButton.onclick = function() {
+         const effectOptions = {};
+         for (const target of document.querySelectorAll('input')) {
+            effectOptions[target.name] = Number(target.value);
+            target.title = target.value;
+         }
+         window.audioAPI.updateTrackEffect('defaultTrack', window.currentEffect, effectOptions);
+      };
+      buttonContainer.appendChild(applyButton);
+      effectOptionsContainer.appendChild(effectOptionContainer);
+   }
    if (window.playing) {
-      const currentEffectSelection = document.getElementById('effectSelector');
       window.audioAPI.removeTrackEffect('defaultTrack', window.currentEffect);
-      window.currentEffect = currentEffectSelection.options[currentEffectSelection.options.selectedIndex].innerText;
+      window.currentEffect = effectText;
       window.audioAPI.applyTrackEffect('defaultTrack', window.currentEffect, currentEffectSelection.value);
    }
 }

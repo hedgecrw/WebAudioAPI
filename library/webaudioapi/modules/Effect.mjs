@@ -16,12 +16,14 @@ import { Chorus } from '../effects/Chorus.mjs';
 import { Compression } from '../effects/Compression.mjs';
 import { Delay } from '../effects/Delay.mjs';
 import { Distortion } from '../effects/Distortion.mjs';
+import { Doppler } from '../effects/Doppler.mjs';
 import { Echo } from '../effects/Echo.mjs';
 import { Equalization } from '../effects/Equalization.mjs';
 import { Flanger } from '../effects/Flanger.mjs';
 import { HighPassFilter } from '../effects/HighPassFilter.mjs';
 import { LowPassFilter } from '../effects/LowPassFilter.mjs';
 import { Panning } from '../effects/Panning.mjs';
+import { PitchShift } from '../effects/PitchShift.mjs';
 import { Phaser } from '../effects/Phaser.mjs';
 import { Reverb } from '../effects/Reverb.mjs';
 import { Tremolo } from '../effects/Tremolo.mjs';
@@ -29,11 +31,11 @@ import { Vibrato } from '../effects/Vibrato.mjs';
 import { Volume } from '../effects/Volume.mjs';
 
 const EffectClasses = {
-   [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus,
+   [EffectType.Reverb]: Reverb, [EffectType.Delay]: Delay, [EffectType.Echo]: Echo, [EffectType.Chorus]: Chorus, [EffectType.Doppler]: Doppler,
    [EffectType.Tremolo]: Tremolo, [EffectType.Vibrato]: Vibrato, [EffectType.Flanger]: Flanger, [EffectType.Phaser]: Phaser,
    [EffectType.Panning]: Panning, [EffectType.Equalization]: Equalization, [EffectType.Volume]: Volume, [EffectType.Compression]: Compression,
    [EffectType.Distortion]: Distortion, [EffectType.LowPassFilter]: LowPassFilter, [EffectType.HighPassFilter]: HighPassFilter,
-   [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter
+   [EffectType.BandPassFilter]: BandPassFilter, [EffectType.BandRejectFilter]: BandRejectFilter, [EffectType.PitchShift]: PitchShift
 };
 
 

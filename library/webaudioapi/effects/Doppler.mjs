@@ -68,6 +68,26 @@ export class Doppler extends EffectBase {
    async update({ initDistance, finalDistance, missDistance, duration }, updateTime) {
       if ((initDistance == null) || (finalDistance == null) || (missDistance == null) || (duration == null))
          throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Doppler effect without all of the following parameters: "initDistance, finalDistance, missDistance, duration"');
+      else if (initDistance < Doppler.minDistance)
+         throw new WebAudioApiErrors.WebAudioValueError(`Distance value cannot be less than ${Doppler.minDistance}`);
+      else if (initDistance > Doppler.maxDistance)
+         throw new WebAudioApiErrors.WebAudioValueError(`Distance value cannot be greater than ${Doppler.maxDistance}`);
+      else if (finalDistance < Doppler.minDistance)
+         throw new WebAudioApiErrors.WebAudioValueError(`Distance value cannot be less than ${Doppler.minDistance}`);
+      else if (finalDistance > Doppler.maxDistance)
+         throw new WebAudioApiErrors.WebAudioValueError(`Distance value cannot be greater than ${Doppler.maxDistance}`);
+      else if (missDistance < Doppler.minDistance)
+         throw new WebAudioApiErrors.WebAudioValueError(`Distance value cannot be less than ${Doppler.minDistance}`);
+      else if (missDistance > Doppler.maxDistance)
+         throw new WebAudioApiErrors.WebAudioValueError(`Distance value cannot be greater than ${Doppler.maxDistance}`);
+      else if (duration < Doppler.minDuration)
+         throw new WebAudioApiErrors.WebAudioValueError(`Duration value cannot be less than ${Doppler.minDuration}`);
+      else if (duration > Doppler.maxDuration)
+         throw new WebAudioApiErrors.WebAudioValueError(`Duration value cannot be greater than ${Doppler.maxDuration}`);
+      else if (initDistance < missDistance)
+         throw new WebAudioApiErrors.WebAudioValueError('Initial distance cannot be less than the miss distance');
+      else if (finalDistance < missDistance)
+         throw new WebAudioApiErrors.WebAudioValueError('Final distance cannot be less than the miss distance');
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const approachingDistance = Math.sqrt(initDistance**2 - missDistance**2);
       const departingDistance = Math.sqrt(finalDistance**2 - missDistance**2);
@@ -83,7 +103,6 @@ export class Doppler extends EffectBase {
          departingWeights[i] = Math.cos(Math.atan2(missDistance, i * speedMetersPerCentisecond));
       const approachingFrequency = 1200 * Math.log2(343.0 / (343.0 - (100 * speedMetersPerCentisecond)));
       const departingFrequency = 1200 * Math.log2(343.0 / (343.0 + (100 * speedMetersPerCentisecond)));
-      console.log(approachingFrequency, departingFrequency);
       this.#pitchShifter.updatePrivate(approachingFrequency, timeToUpdate, approachingWeights, approachingDuration);
       this.#pitchShifter.updatePrivate(departingFrequency, timeToUpdate + approachingDuration, departingWeights, departingDuration);
       return true;

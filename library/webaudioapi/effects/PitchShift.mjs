@@ -139,10 +139,15 @@ export class PitchShift extends EffectBase {
       this.#fade2Node.start(t2);
    }
 
+   // Private update function for internal use only by Doppler effect
    async updatePrivate(shift, updateTime, timeWeights, duration) {
       const finalGain = 0.5 * PitchShift.delayTime * Math.abs(shift) / 1200;
       for (let i = 0; i < timeWeights.length; ++i)
          timeWeights[i] *= finalGain;
+      this.#mod1GainNode.gain.cancelScheduledValues(updateTime);
+      this.#mod2GainNode.gain.cancelScheduledValues(updateTime);
+      this.#mod3GainNode.gain.cancelScheduledValues(updateTime);
+      this.#mod4GainNode.gain.cancelScheduledValues(updateTime);
       if (shift > 0) {
          this.#mod1GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
          this.#mod2GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
@@ -154,6 +159,8 @@ export class PitchShift extends EffectBase {
          this.#mod3GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
          this.#mod4GainNode.gain.setTargetAtTime(0, updateTime, 0.01);
       }
+      this.#modGain1Node.gain.cancelScheduledValues(updateTime);
+      this.#modGain2Node.gain.cancelScheduledValues(updateTime);
       this.#modGain1Node.gain.setValueCurveAtTime(timeWeights, updateTime, duration);
       this.#modGain2Node.gain.setValueCurveAtTime(timeWeights, updateTime, duration);
       return true;
@@ -181,6 +188,10 @@ export class PitchShift extends EffectBase {
          throw new WebAudioApiErrors.WebAudioValueError(`Shift value cannot be greater than ${PitchShift.maxShift}`);
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
+      this.#mod1GainNode.gain.cancelScheduledValues(timeToUpdate);
+      this.#mod2GainNode.gain.cancelScheduledValues(timeToUpdate);
+      this.#mod3GainNode.gain.cancelScheduledValues(timeToUpdate);
+      this.#mod4GainNode.gain.cancelScheduledValues(timeToUpdate);
       if (shift > 0) {
          this.#mod1GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
          this.#mod2GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
@@ -192,6 +203,8 @@ export class PitchShift extends EffectBase {
          this.#mod3GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
          this.#mod4GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
       }
+      this.#modGain1Node.gain.cancelScheduledValues(timeToUpdate);
+      this.#modGain2Node.gain.cancelScheduledValues(timeToUpdate);
       this.#modGain1Node.gain.setTargetAtTime(0.5 * PitchShift.delayTime * Math.abs(shift) / 1200, timeToUpdate, timeConstantTarget);
       this.#modGain2Node.gain.setTargetAtTime(0.5 * PitchShift.delayTime * Math.abs(shift) / 1200, timeToUpdate, timeConstantTarget);
       return true;

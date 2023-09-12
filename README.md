@@ -30,8 +30,8 @@ Javascript library to generate music using the Web Audio API
  - [ ] Add general modulation parameter for entire instrument
  - [ ] Add instrument support for reverb, attack, and decay parameters
  - [ ] Implement instrument library asset creator
- - [ ] Implement Effects: Chorus, Delay, Distortion, Echo, Equalization, Flanger, Phaser, Reverb, Tremolo, Vibrato
  - [ ] Use Sf3 SoundFont format for instrument storage and loading
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
  - [ ] Make library fully General MIDI 2 compliant
+ - [ ] See what other effects can be added from https://github.com/jonathanneels/Audio-Input-Effects and from https://alemangui.github.io/pizzicato/

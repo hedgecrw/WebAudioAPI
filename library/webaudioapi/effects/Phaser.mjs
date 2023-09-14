@@ -14,12 +14,31 @@ import { EffectBase } from './EffectBase.mjs';
  */
 export class Phaser extends EffectBase {
 
+   // Effect-specific private variables
    /** @type {GainNode} */
-   #dry; #desination; #lfoGain; #feedback;
-   /** @type {BiquadFilterNode} */
-   #pole;
+   #inputNode;
+   /** @type {GainNode} */
+   #outputNode;
+   /** @type {BiquadFilterNode[]} */
+   #filterNodes = [];
    /** @type {OscillatorNode} */
-   #lfo;
+   #lfoNode;
+   /** @type {GainNode} */
+   #lfoGainNode;
+   /** @type {GainNode} */
+   #feedbackNode;
+
+
+   // Parameter limits
+   static numPoles = 9;
+   static minRate = 0;
+   static maxRate = 10;
+   static minFrequency = 1;
+   static maxFrequency = 22050;
+   static minFeedback = 0;
+   static maxFeedback = 0.95;
+   static minIntensity = 0;
+   static maxIntensity = 1;
 
    /**
     * Constructs a new {@link Phaser} effect object.
@@ -27,26 +46,19 @@ export class Phaser extends EffectBase {
    constructor(audioContext) {
       super(audioContext);
 
-      // set up dry signal
-      this.#dry = new GainNode(audioContext, { gain: 1 });
-      this.#desination = new GainNode(audioContext);
-      this.#dry.connect(this.#desination);
+      this.#inputNode = new GainNode(audioContext);
+      this.#outputNode = new GainNode(audioContext);
+      for (let i = 0; i < Phaser.numPoles; ++i)
+         this.#filterNodes.push(new BiquadFilterNode(audioContext, { type: 'allpass', Q: 0.1 }));
+      this.#lfoNode = new OscillatorNode(audioContext);
+      this.#lfoGainNode = new GainNode(audioContext);
+      this.#feedbackNode = new GainNode(audioContext);
 
-      // Set up pole
-      this.#pole = new BiquadFilterNode(audioContext, { type: 'allpass' });
-      this.#dry.connect(this.#pole);
-      this.#pole.connect(this.#desination);
-
-      // set up lfo
-      this.#lfo = new OscillatorNode(audioContext, { frequency: 0 });
-      this.#lfoGain = new GainNode(audioContext, { gain: 0 });
-      this.#lfo.connect(this.#lfoGain).connect(this.#pole.detune);
-      this.#lfo.start();
-
-      // set up feedback
-      this.#feedback = new GainNode(audioContext, { gain: 0 });
-      this.#pole.connect(this.#feedback);
-      this.#feedback.connect(this.#pole);
+      this.#outputNode.connect(this.#feedbackNode).connect(this.#inputNode);
+      for (let i = 0; i < Phaser.numPoles; ++i) {
+         this.#lfoNode.connect(this.#lfoGainNode).connect(this.#filterNodes[i].detune);
+         this.#inputNode.connect(this.#filterNodes[i]).connect(this.#outputNode);
+      }
    }
 
    /**
@@ -58,16 +70,24 @@ export class Phaser extends EffectBase {
     */
    static getParameters() {
       return [
-         { name: 'poles', type: 'number', validValues: [1, 8], defaultValue: 4},
-         { name: 'frequency', type: 'number', validValues: [1, 22050], defaultValue: 1 },
-         { name: 'rate', type: 'number', validValues: [0, 1], defaultValue: 0},
-         { name: 'depth', type: 'number', validValues: [0, 10000], defaultValue: 0},
-         { name: 'feedback', type: 'number', validValues: [0, 1], defaultValue: 0},
+         { name: 'rate', type: 'number', validValues: [Phaser.minRate, Phaser.maxRate], defaultValue: 8 },
+         { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
+         { name: 'frequency', type: 'number', validValues: [Phaser.minFrequency, Phaser.maxFrequency], defaultValue: 1500 },
+         { name: 'feedback', type: 'number', validValues: [Phaser.minFeedback, Phaser.maxFeedback], defaultValue: 0 },
+         { name: 'intensity', type: 'number', validValues: [Phaser.minIntensity, Phaser.maxIntensity], defaultValue: 0 }
       ];
    }
 
    async load() {
-      return;
+      this.#inputNode.gain.value = 0.5;
+      this.#outputNode.gain.value = 0.2;
+      this.#lfoGainNode.gain.value = 0;
+      for (let i = 0; i < Phaser.numPoles; ++i)
+         this.#filterNodes[i].frequency.value = 1500 + ((22050 - 1500) / (1 + Phaser.numPoles)) * i;
+      this.#feedbackNode.gain.value = 0;
+      this.#lfoNode.frequency.value = 8;
+      this.#lfoNode.type = 'sine';
+      this.#lfoNode.start();
    }
 
    /**
@@ -77,38 +97,67 @@ export class Phaser extends EffectBase {
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested
     * changes to take effect.
     * 
-    * @param {number} poles - Number of all-pass filters being used by the phaser
-    * @param {number} frequency - Center frequency of the all-pass filters
-    * @param {number} rate - Rate at which the cuts in the bandpass filters are modulated
-    * @param {number} depth - Amplitude of the lfo
-    * @param {number} feedback - Percentage of phased signal that will be fed back into the phased audio circuit
+    * @param {number} rate - Frequency at which an oscillator modulates the phaser signal in Hertz between [0, 10]
+    * @param {string} shape - Waveform shape used to modulate the phaser signal from ['sine', 'square', 'sawtooth', 'triangle']
+    * @param {number} frequency - Starting frequency of the all-pass filter between [1, 22050]
+    * @param {number} feedback - Percentage of processed signal to be fed back into the phaser circuit between [0, 0.95]
+    * @param {number} intensity - Ratio of processed-to-original sound as a percentage between [0, 1]
     * @param {number} [updateTime] - Global API time at which to update the effect
     * @param {number} [timeConstant] - Time constant defining an exponential approach to the target
     * @returns {Promise<boolean>} Whether the effect update was successfully applied
     */
-   async update({poles, frequency, rate, depth, feedback}, updateTime, timeConstant) {
-      if ((poles == null) && (frequency == null) && (rate == null) && (depth == null) && (feedback == null))
-         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "poles, frequency, rate, depth, feedback"');
+   async update({ rate, shape, frequency, feedback, intensity }, updateTime, timeConstant) {
+      if ((rate == null) && (shape == null) && (frequency == null) && (feedback == null) && (intensity == null))
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot update the Phaser effect without at least one of the following parameters: "rate, shape, frequency, feedback, intensity"');
+      if (rate != null) {
+         if (rate < Phaser.minRate)
+            throw new WebAudioApiErrors.WebAudioValueError(`Rate value cannot be less than ${Phaser.minRate}`);
+         else if (rate > Phaser.maxRate)
+            throw new WebAudioApiErrors.WebAudioValueError(`Rate value cannot be greater than ${Phaser.maxRate}`);
+      }
+      if (shape != null) {
+         if (!['sine', 'square', 'sawtooth', 'triangle'].includes(shape))
+            throw new WebAudioApiErrors.WebAudioValueError('Shape value must be one of: ["sine", "square", "sawtooth", "triangle"]');
+      }
+      if (frequency != null) {
+         if (frequency < Phaser.minFrequency)
+            throw new WebAudioApiErrors.WebAudioValueError(`Frequency value cannot be less than ${Phaser.minFrequency}`);
+         else if (frequency > Phaser.maxFrequency)
+            throw new WebAudioApiErrors.WebAudioValueError(`Frequency value cannot be greater than ${Phaser.maxFrequency}`);
+      }
+      if (feedback != null) {
+         if (feedback < Phaser.minFeedback)
+            throw new WebAudioApiErrors.WebAudioValueError(`Feedback value cannot be less than ${Phaser.minFeedback}`);
+         else if (feedback > Phaser.maxFeedback)
+            throw new WebAudioApiErrors.WebAudioValueError(`Feedback value cannot be greater than ${Phaser.maxFeedback}`);
+      }
+      if (intensity != null) {
+         if (intensity < Phaser.minIntensity)
+            throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be less than ${Phaser.minIntensity}`);
+         else if (intensity > Phaser.maxIntensity)
+            throw new WebAudioApiErrors.WebAudioValueError(`Intensity value cannot be greater than ${Phaser.maxIntensity}`);
+      }
       const timeToUpdate = (updateTime == null) ? this.audioContext.currentTime : updateTime;
       const timeConstantTarget = (timeConstant == null) ? 0.0 : timeConstant;
-      if (poles != null)
-         console.log(Math.round(poles));
+      if (rate != null)
+         this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
+      if (shape != null)
+         this.#lfoNode.type = shape;
       if (frequency != null)
-         this.#pole.frequencysetTargetAtTime(frequency, timeToUpdate, timeConstantTarget);
-      if (rate != null) 
-         this.#lfo.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
-      if (depth != null)
-         this.#lfoGain.gain.setTargetAtTime(depth, timeToUpdate, timeConstantTarget);
-      if (feedback != null) 
-         this.#feedback.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
+         for (let i = 0; i < Phaser.numPoles; ++i)
+            this.#filterNodes[i].frequency.setTargetAtTime(frequency + ((22050 - frequency) / (1 + Phaser.numPoles)) * i, timeToUpdate, timeConstantTarget);
+      if (feedback != null)
+         this.#feedbackNode.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
+      if (intensity != null)
+         this.#lfoGainNode.gain.setTargetAtTime(1000 * intensity, timeToUpdate, timeConstantTarget);
       return true;
    }
 
    getInputNode() {
-      return this.#dry;
+      return this.#inputNode;
    }
 
    getOutputNode() {
-      return this.#desination;
+      return this.#outputNode;
    }
 }

@@ -66,7 +66,7 @@ export class Flanger extends EffectBase {
          { name: 'shape', type: 'string', validValues: ['sine', 'square', 'sawtooth', 'triangle'], defaultValue: 'sine' },
          { name: 'delay', type: 'number', validValues: [Flanger.minDelay, Flanger.maxDelay], defaultValue: 0.0075 },
          { name: 'feedback', type: 'number', validValues: [Flanger.minFeedback, Flanger.maxFeedback], defaultValue: 0 },
-         { name: 'intensity', type: 'number', validValues: [Flanger.minIntensity, Flanger.maxIntensity], defaultValue: 0 },
+         { name: 'intensity', type: 'number', validValues: [Flanger.minIntensity, Flanger.maxIntensity], defaultValue: 0 }
       ];
    }
 

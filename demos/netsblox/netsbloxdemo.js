@@ -26,9 +26,8 @@ function addEffectOptions(effectElement) {
 
 function addNoteOptions(noteElement) {
    const notes = window.audioAPI.getAvailableNotes();
-   noteElement.add(new Option('None', 0));
    for (const note in notes) {
-      let text = note.slice(0, 2) + ((note[2] == 's') ? '♯' : (note[2] == 'b') ? '♭' : '') + ((note[3] == 's') ? '♯' : (note[3] == 'b') ? '♭' : '');
+      const text = (note == 'Rest') ? note : (note.slice(0, 2) + ((note[2] == 's') ? '♯' : (note[2] == 'b') ? '♭' : '') + ((note[3] == 's') ? '♯' : (note[3] == 'b') ? '♭' : ''));
       noteElement.add(new Option(text, notes[note]));
    }
 }

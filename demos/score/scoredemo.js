@@ -6,9 +6,8 @@ function addDurationOptions(durationElement) {
 
 function addNoteOptions(noteElement) {
    const notes = window.audioAPI.getAvailableNotes();
-   noteElement.add(new Option('None', 0));
    for (const note in notes) {
-      let text = note.slice(0, 2) + ((note[2] == 's') ? '♯' : (note[2] == 'b') ? '♭' : '') + ((note[3] == 's') ? '♯' : (note[3] == 'b') ? '♭' : '');
+      const text = (note == 'Rest') ? note : (note.slice(0, 2) + ((note[2] == 's') ? '♯' : (note[2] == 'b') ? '♭' : '') + ((note[3] == 's') ? '♯' : (note[3] == 'b') ? '♭' : ''));
       noteElement.add(new Option(text, notes[note]));
    }
 }
@@ -117,11 +116,10 @@ window.playScore = async function() {
    for (const chord of document.getElementsByClassName('chord')) {
       let durationSeconds = 0.0;
       const durationList = [], noteList = [];
-      for (const noteSelection of chord.querySelectorAll('.note'))
-         if (noteSelection.value !== '0') {
-            durationList.push(chord.querySelector('.duration').value);
-            noteList.push(noteSelection.value);
-         }
+      for (const noteSelection of chord.querySelectorAll('.note')) {
+         durationList.push(chord.querySelector('.duration').value);
+         noteList.push(noteSelection.value);
+      }
       for (let i = 0; i < noteList.length; ++i)
          durationSeconds = await window.audioAPI.playNote('defaultTrack', noteList[i], executionStartTime, durationList[i]);
       executionStartTime += durationSeconds;

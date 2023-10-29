@@ -9,7 +9,7 @@
  * Object representing a mapping between the notational name of a musical note and its MIDI value.
  * @constant {Object.<string, number>}
  */
-export const Note = {
+export const Note = {  Rest: 0,
    C0: 12,             D0bb: 12,  C0s: 13,              D0b: 13,   D0: 14,  C0ss: 14,  E0bb: 14,
   D0s: 15,   E0b: 15,  F0bb: 15,   E0: 16,  D0ss: 16,   F0b: 16,   F0: 17,   E0s: 17,  G0bb: 17,
   F0s: 18,  E0ss: 18,   G0b: 18,   G0: 19,  F0ss: 19,  A0bb: 19,  G0s: 20,   A0b: 20,
@@ -57,7 +57,7 @@ export const Note = {
  * @constant {number[]}
  */
 export const Frequency = [
-     8.18,    8.66,    9.18,    9.72,    10.30,    10.91,    11.56,    12.25,    12.98,    13.75,    14.57,    15.43,
+      0.0,    8.66,    9.18,    9.72,    10.30,    10.91,    11.56,    12.25,    12.98,    13.75,    14.57,    15.43,
     16.35,   17.32,   18.35,   19.45,    20.60,    21.83,    23.12,    24.50,    25.96,    27.50,    29.14,    30.87,
     32.70,   34.65,   36.71,   38.89,    41.20,    43.65,    46.25,    49.00,    51.91,    55.00,    58.27,    61.74,
     65.41,   69.30,   73.42,   77.78,    82.41,    87.31,    92.50,    98.00,   103.83,   110.00,   116.54,   123.47,

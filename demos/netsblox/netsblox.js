@@ -16,7 +16,7 @@ class ChordBlock {
       return this.durationElement.value;
    }
    getNotes() {
-      return this.noteElements.filter(element => element.value != '0').map(element => element.value);
+      return this.noteElements.map(element => element.value);
    }
    async loadBlock(api, trackName) { return; }
    async runBlock(api, trackName, executionStartTime) {

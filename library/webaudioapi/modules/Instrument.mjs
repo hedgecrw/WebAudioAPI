@@ -52,7 +52,7 @@ export async function loadInstrument(audioContext, name, url) {
    }
    
    function fillInMissingNotes(noteData, missingData) {
-      for (let note = 0; note < noteData.length; ++note)
+      for (let note = 1; note < noteData.length; ++note)
          if (noteData[note] === undefined) {
             const closestValidNote = findClosestValidNote(noteData, note);
             missingData[note] = {
@@ -60,6 +60,7 @@ export async function loadInstrument(audioContext, name, url) {
                'detune': 100 * (note - closestValidNote)
             };
          }
+      missingData[0] = { 'buffer': null, 'detune': 0 };
    }
    
    async function loadNotesAndInterpolate(instrumentData, noteData, missingData) {

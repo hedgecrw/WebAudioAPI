@@ -453,6 +453,15 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns the current global {@link Tempo} parameters for all audio tracks.
+    * 
+    * @returns {Tempo} Global {@link Tempo} parameters and settings
+    */
+   getTempo() {
+      return {...this.#tempo};
+   }
+
+   /**
     * Updates the global tempo parameters for all audio tracks.
     * 
     * The `beatBase` parameter should correspond to the beat scaling factor associated with one of

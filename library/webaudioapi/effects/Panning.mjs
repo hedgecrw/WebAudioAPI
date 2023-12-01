@@ -71,6 +71,12 @@ export class Panning extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         leftToRightRatio: (0.5 * this.#panningNode.pan.value) + 0.5
+      };
+   }
+
    getInputNode() {
       return this.#panningNode;
    }

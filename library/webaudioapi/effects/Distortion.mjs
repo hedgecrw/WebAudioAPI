@@ -19,6 +19,8 @@ export class Distortion extends EffectBase {
    #preBandpassNode;
    /** @type {WaveShaperNode} */
    #distortionNode;
+   /** @type {number} */
+   #intensityValue;
 
    // Parameter limits
    static minTone = 0;
@@ -61,6 +63,7 @@ export class Distortion extends EffectBase {
       }
       this.#distortionNode.curve = curve;
       this.#outputNode.gain.value = driveValue;
+      this.#intensityValue = 0.5;
    }
 
    /**
@@ -93,8 +96,16 @@ export class Distortion extends EffectBase {
          this.#distortionNode.curve = curve;
          const gainOffset = (intensity < 0.5) ? (Math.exp(2.3 * (0.5 - intensity)) - 0.5) : (0.5 + (0.2 * (0.5 - intensity)));
          this.#outputNode.gain.setTargetAtTime(gainOffset, timeToUpdate, timeConstantTarget);
+         this.#intensityValue = intensity;
       }
       return true;
+   }
+
+   currentParameterValues() {
+      return {
+         tone: this.#preBandpassNode.frequency.value,
+         intensity: this.#intensityValue
+      };
    }
 
    getInputNode() {

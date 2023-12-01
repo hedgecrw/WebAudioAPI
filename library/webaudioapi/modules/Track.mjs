@@ -159,6 +159,21 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    }
 
    /**
+    * Returns the current parameter settings for the specified track effect.
+    * 
+    * @param {string} effectName - Name of the track effect for which to retrieve current settings
+    * @returns {Object} Effect-specific parameter values with keys as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
+    * @memberof Track
+    * @instance
+    */
+   function getCurrentEffectParameters(effectName) {
+      for (const effect of effects)
+         if (effect.name == effectName)
+            return effect.currentParameterValues();
+      throw new WebAudioApiErrors.WebAudioTargetError(`The target track effect (${effectName}) does not exist`);
+   }
+
+   /**
     * Removes the specified track effect from being applied.
     * 
     * @param {string} effectName - Name of the track effect to be removed
@@ -938,8 +953,8 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
        * @instance
        */
       name,
-      updateInstrument, removeInstrument, applyEffect, updateEffect, removeEffect, stopNoteAsync, playNoteAsync, playNote,
-      playClip, playFile, recordMidiClip, recordAudioClip, recordOutput, connectToMidiDevice, disconnectFromMidiDevice,
-      connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
+      updateInstrument, removeInstrument, applyEffect, updateEffect, getCurrentEffectParameters, removeEffect, stopNoteAsync,
+      playNoteAsync, playNote, playClip, playFile, recordMidiClip, recordAudioClip, recordOutput, connectToMidiDevice,
+      disconnectFromMidiDevice, connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
    };
 }

@@ -98,6 +98,13 @@ export class Echo extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         echoTime: this.#delayNode.delayTime.value,
+         intensity: this.#feedbackNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#inputNode;
    }

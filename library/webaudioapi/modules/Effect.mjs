@@ -118,6 +118,17 @@ export async function loadEffect(audioContext, effectName, effectType) {
       parameters: EffectClasses[effectType].getParameters(),
 
       /**
+       * Retrieves the values for all effect-specific parameters at the current time, with keys as
+       * specified by the {@link Effect#parameters parameters} member of this {@link Effect}.
+       * 
+       * @function
+       * @returns {Object} Effect-specific parameter values with keys as returned by {@link Effect#parameters parameters}
+       * @memberof Effect
+       * @instance
+       */
+      currentParameterValues: effect.currentParameterValues.bind(effect),
+
+      /**
        * Updates the parameters of the effect at the specified time.
        * 
        * Note that the `updateTime` parameter can be omitted to immediately cause the requested

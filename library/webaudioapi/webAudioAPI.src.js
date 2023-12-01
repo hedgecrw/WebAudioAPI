@@ -592,6 +592,32 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns the current parameter settings for the specified master effect.
+    * 
+    * @param {string} effectName - Name of the master effect for which to retrieve current settings
+    * @returns {Object} Effect-specific parameter values with keys as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
+    */
+   getCurrentMasterEffectParameters(effectName) {
+      for (const effect of this.#effects)
+         if (effect.name == effectName)
+            return effect.currentParameterValues();
+      throw new WebAudioApiErrors.WebAudioTargetError(`The target master effect (${effectName}) does not exist`);
+   }
+
+   /**
+    * Returns the current parameter settings for a track-specific effect.
+    * 
+    * @param {string} trackName - Name of the track for which to retrieve current effect settings
+    * @param {string} effectName - Name of the track effect for which to retrieve current settings
+    * @returns {Object} Effect-specific parameter values with keys as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
+    */
+   getCurrentTrackEffectParameters(trackName, effectName) {
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      return this.#tracks[trackName].getCurrentEffectParameters(effectName);
+   }
+
+   /**
     * Removes the specified master effect from being applied.
     * 
     * @param {string} effectName - Name of the master effect to be removed

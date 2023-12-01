@@ -130,6 +130,14 @@ export class Reverb extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         decay: this.#decay,
+         roomSize: this.#relativeRoomSize,
+         intensity: 1 - this.#dryGainNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#inputNode;
    }

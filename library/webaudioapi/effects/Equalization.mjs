@@ -120,6 +120,18 @@ export class Equalization extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      const cutoffs = [], gains = [];
+      for (const element of this.#equalizerNodes) {
+         cutoffs.push(element.frequency.value);
+         gains.push(element.gain.value);
+      }
+      return {
+         frequencyBandUpperCutoffs: cutoffs,
+         frequencyBandGains: gains
+      };
+   }
+
    getInputNode() {
       return this.#equalizerNodes[0];
    }

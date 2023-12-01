@@ -14,6 +14,14 @@ export class Doppler extends EffectBase {
    // Effect-specific private variables
    /** @type {PitchShift} */
    #pitchShifter;
+   /** @type {number} */
+   #initDistance;
+   /** @type {number} */
+   #finalDistance;
+   /** @type {number} */
+   #missDistance;
+   /** @type {number} */
+   #duration;
 
    // Parameter limits
    static minDistance = 0;
@@ -46,6 +54,10 @@ export class Doppler extends EffectBase {
    }
 
    async load() {
+      this.#initDistance = 100;
+      this.#finalDistance = 100;
+      this.#missDistance = 14;
+      this.#duration = 10;
       await this.#pitchShifter.load();
    }
 
@@ -105,7 +117,20 @@ export class Doppler extends EffectBase {
       const departingFrequency = 1200 * Math.log2(343.0 / (343.0 + (100 * speedMetersPerCentisecond)));
       this.#pitchShifter.updatePrivate(approachingFrequency, timeToUpdate, approachingWeights, approachingDuration);
       this.#pitchShifter.updatePrivate(departingFrequency, timeToUpdate + approachingDuration, departingWeights, departingDuration);
+      this.#initDistance = initDistance;
+      this.#finalDistance = finalDistance;
+      this.#missDistance = missDistance;
+      this.#duration = duration;
       return true;
+   }
+
+   currentParameterValues() {
+      return {
+         initDistance: this.#initDistance,
+         finalDistance: this.#finalDistance,
+         missDistance: this.#missDistance,
+         duration: this.#duration
+      };
    }
 
    getInputNode() {

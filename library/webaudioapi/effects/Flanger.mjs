@@ -24,6 +24,8 @@ export class Flanger extends EffectBase {
    #lfoGainNode;
    /** @type {GainNode} */
    #feedbackNode;
+   /** @type {number} */
+   #intensityValue;
 
    // Parameter limits
    static minRate = 0;
@@ -71,6 +73,7 @@ export class Flanger extends EffectBase {
    }
 
    async load() {
+      this.#intensityValue = 0;
       this.#inputNode.gain.value = 0.5;
       this.#outputNode.gain.value = 1;
       this.#lfoGainNode.gain.value = 0;
@@ -138,9 +141,21 @@ export class Flanger extends EffectBase {
          this.#delayNode.delayTime.setTargetAtTime(delay, timeToUpdate, timeConstantTarget);
       if (feedback != null)
          this.#feedbackNode.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
-      if (intensity != null)
+      if (intensity != null) {
+         this.#intensityValue = intensity;
          this.#lfoGainNode.gain.setTargetAtTime(this.#delayNode.delayTime.value * intensity, timeToUpdate, timeConstantTarget);
+      }
       return true;
+   }
+
+   currentParameterValues() {
+      return {
+         rate: this.#lfoNode.frequency.value,
+         shape: this.#lfoNode.type,
+         delay: this.#delayNode.delayTime.value,
+         feedback: this.#feedbackNode.gain.value,
+         intensity: this.#intensityValue
+      };
    }
 
    getInputNode() {

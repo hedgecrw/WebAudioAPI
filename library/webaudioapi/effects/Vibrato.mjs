@@ -96,6 +96,13 @@ export class Vibrato extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         rate: this.#lfoNode.frequency.value,
+         intensity: 1000 * this.#gainNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#delayNode;
    }

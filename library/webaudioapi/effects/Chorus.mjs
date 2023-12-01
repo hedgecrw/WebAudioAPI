@@ -167,6 +167,16 @@ export class Chorus extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         rate: this.#lfoNode.frequency.value,
+         shape: this.#lfoNode.type,
+         delay: this.#wetDelayNode.delayTime.value,
+         feedback: this.#feedbackLeft.gain.value,
+         intensity: 1000 * this.#lfoGainNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#inputNode;
    }

@@ -69,6 +69,12 @@ export class Volume extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         intensity: this.#volumeNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#volumeNode;
    }

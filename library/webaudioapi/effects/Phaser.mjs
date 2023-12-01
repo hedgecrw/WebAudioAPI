@@ -27,6 +27,8 @@ export class Phaser extends EffectBase {
    #lfoGainNode;
    /** @type {GainNode} */
    #feedbackNode;
+   /** @type {number} */
+   #frequencyValue;
 
 
    // Parameter limits
@@ -79,6 +81,7 @@ export class Phaser extends EffectBase {
    }
 
    async load() {
+      this.#frequencyValue = 1500;
       this.#inputNode.gain.value = 0.5;
       this.#outputNode.gain.value = 0.2;
       this.#lfoGainNode.gain.value = 0;
@@ -143,14 +146,26 @@ export class Phaser extends EffectBase {
          this.#lfoNode.frequency.setTargetAtTime(rate, timeToUpdate, timeConstantTarget);
       if (shape != null)
          this.#lfoNode.type = shape;
-      if (frequency != null)
+      if (frequency != null) {
+         this.#frequencyValue = frequency;
          for (let i = 0; i < Phaser.numPoles; ++i)
             this.#filterNodes[i].frequency.setTargetAtTime(frequency + ((22050 - frequency) / (1 + Phaser.numPoles)) * i, timeToUpdate, timeConstantTarget);
+      }
       if (feedback != null)
          this.#feedbackNode.gain.setTargetAtTime(feedback, timeToUpdate, timeConstantTarget);
       if (intensity != null)
          this.#lfoGainNode.gain.setTargetAtTime(1000 * intensity, timeToUpdate, timeConstantTarget);
       return true;
+   }
+
+   currentParameterValues() {
+      return {
+         rate: this.#lfoNode.frequency.value,
+         shape: this.#lfoNode.type,
+         frequency: this.#frequencyValue,
+         feedback: this.#feedbackNode.gain.value,
+         intensity: 0.001 * this.#lfoGainNode.gain.value
+      };
    }
 
    getInputNode() {

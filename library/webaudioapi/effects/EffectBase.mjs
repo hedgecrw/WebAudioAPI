@@ -23,6 +23,13 @@ export class EffectBase {
    async load() { return; }
 
    /**
+    * Returns the value of all effect parameters at the current time.
+    * 
+    * @returns {Object} Effect-specific parameter values with keys as returned by {@link WebAudioAPI#getAvailableEffectParameters getAvailableEffectParameters()}
+    */
+   currentParameterValues() { return undefined; }
+
+   /**
     * Updates the parameters of the effect at the specified time.
     * 
     * Note that the `updateTime` parameter can be omitted to immediately cause the requested

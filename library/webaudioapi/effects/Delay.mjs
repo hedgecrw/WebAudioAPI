@@ -97,6 +97,13 @@ export class Delay extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         delay: this.#delayNode.delayTime.value,
+         attenuation: 1.0 - this.#gainNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#inputNode;
    }

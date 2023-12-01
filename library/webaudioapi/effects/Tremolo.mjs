@@ -99,6 +99,13 @@ export class Tremolo extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         rate: this.#lfoNode.frequency.value,
+         intensity: 2.0 * this.#depthNode.gain.value
+      };
+   }
+
    getInputNode() {
       return this.#normalizationNode;
    }

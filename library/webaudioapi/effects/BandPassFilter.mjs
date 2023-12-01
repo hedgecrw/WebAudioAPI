@@ -91,6 +91,13 @@ export class BandPassFilter extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         lowerCutoffFrequency: this.#lowerCutoffFrequency,
+         upperCutoffFrequency: this.#upperCutoffFrequency
+      };
+   }
+
    getInputNode() {
       return this.#filterNode;
    }

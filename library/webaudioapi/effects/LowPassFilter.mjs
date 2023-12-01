@@ -85,6 +85,13 @@ export class LowPassFilter extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         cutoffFrequency: this.#filterNode.frequency.value,
+         resonance: this.#filterNode.Q.value
+      };
+   }
+
    getInputNode() {
       return this.#filterNode;
    }

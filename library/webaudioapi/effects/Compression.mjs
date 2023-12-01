@@ -114,6 +114,15 @@ export class Compression extends EffectBase {
       return true;
    }
 
+   currentParameterValues() {
+      return {
+         threshold: this.#compressorNode.threshold.value,
+         attack: this.#compressorNode.attack.value,
+         release: this.#compressorNode.release.value,
+         intensity: (this.#compressorNode.ratio.value - 1.0) / 19.0
+      };
+   }
+
    getInputNode() {
       return this.#compressorNode;
    }

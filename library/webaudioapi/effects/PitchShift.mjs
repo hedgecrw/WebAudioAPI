@@ -24,6 +24,8 @@ export class PitchShift extends EffectBase {
    #mod1Node; #mod2Node; #mod3Node; #mod4Node;
    /** @type {AudioBufferSourceNode} */
    #fade1Node; #fade2Node;
+   /** @type {number} */
+   #shiftValue;
 
    // Parameter limits
    static bufferTime = 0.250;
@@ -137,6 +139,7 @@ export class PitchShift extends EffectBase {
       this.#mod4Node.start(t2);
       this.#fade1Node.start(t);
       this.#fade2Node.start(t2);
+      this.#shiftValue = 0;
    }
 
    // Private update function for internal use only by Doppler effect
@@ -203,11 +206,18 @@ export class PitchShift extends EffectBase {
          this.#mod3GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
          this.#mod4GainNode.gain.setTargetAtTime(0, timeToUpdate, 0.01);
       }
+      this.#shiftValue = shift;
       this.#modGain1Node.gain.cancelScheduledValues(timeToUpdate);
       this.#modGain2Node.gain.cancelScheduledValues(timeToUpdate);
       this.#modGain1Node.gain.setTargetAtTime(0.5 * PitchShift.delayTime * Math.abs(shift) / 1200, timeToUpdate, timeConstantTarget);
       this.#modGain2Node.gain.setTargetAtTime(0.5 * PitchShift.delayTime * Math.abs(shift) / 1200, timeToUpdate, timeConstantTarget);
       return true;
+   }
+
+   currentParameterValues() {
+      return {
+         shift: this.#shiftValue
+      };
    }
 
    getInputNode() {

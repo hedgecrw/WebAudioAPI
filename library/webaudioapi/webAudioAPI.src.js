@@ -462,6 +462,29 @@ export class WebAudioAPI {
    }
 
    /**
+    * Converts a note {@link module:Constants.Duration Duration} into a corresponding number of seconds given the
+    * current {@link Tempo} settings.
+    * 
+    * @param {number} duration - Note {@link module:Constants.Duration Duration} to convert to seconds
+    * @returns {number} Number of seconds corresponding to the specified `duration` at current {@link Tempo} settings
+    */
+   convertNoteDurationToSeconds(duration) {
+      return 60.0 / ((duration / this.#tempo.beatBase) * this.#tempo.beatsPerMinute);
+   }
+
+   /**
+    * Converts a number of seconds into the nearest corresponding note {@link module:Constants.Duration Duration} given the
+    * current {@link Tempo} settings.
+    * 
+    * @param {number} seconds - Number of seconds to convert to a note {@link module:Constants.Duration Duration}
+    * @returns {number} Note {@link module:Constants.Duration Duration} corresponding to the specified `seconds` at current {@link Tempo} settings
+    */
+   convertSecondsToNoteDuration(seconds) {
+      // TODO: Implement this
+      throw new WebAudioApiErrors.WebAudioNotImplementedError('The "convertSecondsToNoteDuration" functionality has not yet been implemented');
+   }
+
+   /**
     * Updates the global tempo parameters for all audio tracks.
     * 
     * The `beatBase` parameter should correspond to the beat scaling factor associated with one of

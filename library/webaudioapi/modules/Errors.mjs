@@ -4,6 +4,13 @@
  * @module Errors
  */
 
+export class WebAudioNotImplementedError extends Error {
+   constructor(message) {
+      super(message);
+      this.name = 'WebAudioNotImplementedError';
+   }
+}
+
 export class WebAudioMidiError extends Error {
    constructor(message) {
       super(message);

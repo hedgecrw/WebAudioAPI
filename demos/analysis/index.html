@@ -23,6 +23,9 @@
     <div class="center">
       <label for="device">MIDI Device:&nbsp;</label>
       <select name="device" id="device" onchange="changeMidiDevice()"></select>
+      <div>&nbsp;or&nbsp;</div>
+      <div id="playButton" class="button" onclick="play()">Play Clip</div>
+      <div id="stopButton" class="button disabled" onclick="stop()">Stop</div>
     </div>
 
     <p>&nbsp;</p>

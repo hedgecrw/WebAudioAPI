@@ -11,3 +11,25 @@ canvas {
 .class {
   display: block;
 }
+
+.button {
+  margin: 0 3px 0 3px;
+  background-color: #CCCCCC;
+  border: 1px solid #CCCCCC;
+  border-radius: 2px;
+  padding: 0 10px;
+  text-align: center;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.button:hover {
+  cursor: pointer;
+  background-color: #999999;
+}
+
+.disabled {
+  color:  grey;
+  opacity: 0.4;
+  pointer-events: none;
+}

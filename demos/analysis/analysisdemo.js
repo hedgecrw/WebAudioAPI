@@ -1,4 +1,5 @@
 window.onload = () => {
+   window.playing = false;
    window.audioAPI = new WebAudioAPI();
    window.audioAPI.createTrack('defaultTrack');
    const midiDeviceSelector = document.getElementById('device');
@@ -119,4 +120,29 @@ function changeMidiDevice() {
          updateSpectrum();
          updatePower();
       });
+}
+
+async function play() {
+   window.playing = true;
+   window.audioAPI.start();
+   document.getElementById('playButton').classList.add('disabled');
+   document.getElementById('stopButton').classList.remove('disabled');
+   document.getElementById("status").textContent = 'Playing';
+   let executionStartTime = window.audioAPI.getCurrentTime();
+   updateWaveform();
+   updateWinamp();
+   updateSpectrum();
+   updatePower();
+   while (window.playing) {
+      executionStartTime += await window.audioAPI.playFile('defaultTrack', 'audioclip/3768848345.mp3', executionStartTime);
+      while (window.playing && (window.audioAPI.getCurrentTime() + 0.2 < executionStartTime))
+         await new Promise(res => setTimeout(res, 10));
+   }
+   window.audioAPI.stop();
+}
+
+function stop() {
+   document.getElementById('playButton').classList.remove('disabled');
+   document.getElementById('stopButton').classList.add('disabled');
+   window.playing = false;
 }

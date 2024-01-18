@@ -481,6 +481,7 @@ export class WebAudioAPI {
     */
    convertSecondsToNoteDuration(seconds) {
       // TODO: Implement this
+      console.log(seconds);
       throw new WebAudioApiErrors.WebAudioNotImplementedError('The "convertSecondsToNoteDuration" functionality has not yet been implemented');
    }
 

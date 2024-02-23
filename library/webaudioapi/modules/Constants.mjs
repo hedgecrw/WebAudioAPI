@@ -111,3 +111,11 @@ export const AnalysisType = {
 export const EncodingType = {
    WAV: 1
 };
+
+/**
+ * Object representing a mapping between an instrument file encoding type and its unique internal code.
+ * @constant {Object.<string, number>}
+ */
+export const InstrumentEncodingType = {
+   PCM: 0, WEBM_OPUS: 1
+};

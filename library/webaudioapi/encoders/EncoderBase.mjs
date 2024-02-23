@@ -13,9 +13,10 @@ export class EncoderBase {
     * encoded data.
     * 
     * @param {AudioBuffer} audioData - {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer} containing the data to encode
-    * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio
+    * @param {Object} [encodingOptions] - Optional encoding-specific options such as 'bitRate'
+    * @returns {Promise<Blob>} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer}
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
     */
-   encode(audioData) { return undefined; }
+   async encode(audioData, encodingOptions) { return undefined; }
 }

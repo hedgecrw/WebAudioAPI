@@ -4,7 +4,7 @@
    "source": {
       "includePattern": ".+\\.(js(doc|x)?|mjs)$",
       "excludePattern": "(^|\\/|\\\\)_",
-      "exclude": ["library/webaudioapi/modules/Fflate.js"]
+      "exclude": ["library/webaudioapi/encoders/webm-muxer.min.mjs"]
    },
    "sourceType": "module",
    "tags": {

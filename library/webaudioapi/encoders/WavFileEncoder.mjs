@@ -13,7 +13,7 @@ export class WavFileEncoder extends EncoderBase {
       super();
    }
 
-   encode(audioData) {
+   async encode(audioData) {
       // Code taken from https://russellgood.com/how-to-convert-audiobuffer-to-audio-file/
       const numChannels = audioData.numberOfChannels, length = audioData.length * numChannels * 2 + 44;
       const buffer = new ArrayBuffer(length), channels = [];

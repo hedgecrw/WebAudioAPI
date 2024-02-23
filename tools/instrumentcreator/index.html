@@ -17,18 +17,20 @@
           <strong>Instructions:</strong>
           Use the controls below to select <em>all</em> note audio files to be included in your new instrument.
           Note that you must select the actual files and not a directory containing the files, and the note
-          represented by each file should be designated by its filename in the following format:
+          represented by each file should be designated by its filename in one of the following formats:
         </p>
+        <p><code>[MIDI_NOTE_NUMBER].[EXTENSION]</code></p>
+        <p>or</p>
         <p><code>[NOTE][OCTAVE][MODIFIER].[EXTENSION]</code></p>
         <p>
           The letters 's', 'ss', 'b', or 'bb' should be used for the MODIFIER to indicate a '♯', '♯♯', '♭',
-          or '♭♭', respectively. As an example, a WAV audio file for note 'F4♭' would be 'F4b.wav', and an OGG
-          audio file for note 'C2' would be 'C2.ogg'.
+          or '♭♭', respectively. As an example, a WAV audio file for note 'F4♭' would be either 'F4b.wav' or
+          '64.wav', and an OGG audio file for note 'C2' would be either 'C2.ogg' or '36.ogg'.
         </p>
         <p>
           After you have specified a name for your new instrument and selected all audio files to include, click
-          the 'Generate' button to create a downloadable URL that you can use to retrieve a GZIP file containing
-          your new instrument. You may either host this new file on your own webserver and load it manually into
+          the 'Generate' button to create a downloadable URL that you can use to retrieve a file containing your
+          new instrument. You may either host this new file on your own webserver and load it manually into
           the AudioGenerator library, or if you are a library developer, you should include it in this repository's
           <code>instruments/</code> directory and add it as an option in the <code>InstrumentLibrary.js</code> file.
         </p>
@@ -38,6 +40,33 @@
         <div>
           <label for="instrumentName">New Instrument Name:&nbsp;</label>
           <input type="text" name="instrumentName" id="instrumentName">
+        </div>
+        <div>
+          <label for="format">Desired Storage Format:&nbsp;</label>
+          <select id="format" name="format" onchange="formatChanged()">
+            <option value=1>WebM/Opus</option>
+            <option value=0>PCM</option>
+          </select>
+        </div>
+        <div>
+          <label for="sampleRate">Desired Audio Sample Rate (Hz):&nbsp;</label>
+          <input type="number" name="sampleRate" id="sampleRate" value="44100">
+        </div>
+        <div>
+          <label for="bitRate">Desired Bit Rate (bps):&nbsp;</label>
+          <input type="number" name="bitRate" id="bitRate" value="96000">
+        </div>
+        <div>
+          <label for="minNote">Minimum Playable Note (MIDI Number):&nbsp;</label>
+          <input type="number" name="minNote" id="minNote" value="0">
+        </div>
+        <div>
+          <label for="maxNote">Maximum Playable Note (MIDI Number):&nbsp;</label>
+          <input type="number" name="maxNote" id="maxNote" value="127">
+        </div>
+        <div>
+          <label for="decays">Sustained Notes Decay:&nbsp;</label>
+          <input type="checkbox" name="decays" id="decays">
         </div>
         <div>
           <label for="noteFiles">Note Audio Files:&nbsp;</label>

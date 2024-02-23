@@ -7,7 +7,7 @@ p {
   margin-block-start: 0;
 }
 
-input, button {
+input, button, select {
   margin-top: 15px;
 }
 
@@ -20,6 +20,10 @@ span {
   display: flex;
   align-items: center;
   flex-direction: column;
+}
+
+.upload div {
+  height: 30px;
 }
 
 .error {

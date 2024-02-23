@@ -59,3 +59,10 @@ export class WebAudioRecordingError extends Error {
       this.name = 'WebAudioRecordingError';
    }
 }
+
+export class WebAudioInstrumentError extends Error {
+   constructor(message) {
+      super(message);
+      this.name = 'WebAudioInstrumentError';
+   }
+}

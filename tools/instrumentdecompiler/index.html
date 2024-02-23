@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>Instrument Decompilation Tool</title>
+    <link rel="stylesheet" href="decompiler.css">
+    <script type="module" src="js/decompiler.js"></script>
+  </head>
+
+  <body>
+    <div class="wrapper">
+
+      <div class="upload">
+        <div>
+          <label for="instrumentFile">Existing Instrument File:&nbsp;</label>
+          <input type="file" name="instrumentFile" id="instrumentFile">
+        </div>
+        <div>
+          <button onclick="decompileInstrument()">Decompile</button>
+          <span id="resultLabel" class="hidden">Result Label</span>
+          <span id="result" class="hidden">Result</span>
+        </div>
+        <p><br></p>
+        <div class="hidden2">Instrument Name: <span id="instrumentName"></span></div>
+        <div class="hidden2">File Version: <span id="fileVersion"></span></div>
+        <div class="hidden2">Audio Encoding: <span id="audioEncoding"></span></div>
+        <div class="hidden2">Sample Rate: <span id="sampleRate"></span></div>
+        <div class="hidden2">Bit Rate: <span id="bitRate"></span></div>
+        <div class="hidden2">Valid Note Range: <span id="minValidNote"></span> - <span id="maxValidNote"></span></div>
+        <div class="hidden2">Sustained Notes Decay: <span id="sustainedDecays"></span></div>
+      </div>
+
+    </div>
+  </body>
+
+</html>

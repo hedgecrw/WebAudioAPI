@@ -497,7 +497,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
          }
          const renderedData = await offlineContext.startRendering();
          noteSources.splice(0, noteSources.length);
-         return getEncoderFor(Number(encodingType)).encode(renderedData);
+         return await getEncoderFor(Number(encodingType)).encode(renderedData);
       }
 
       // Begin listening for all incoming MIDI events and optionally set a timer to stop listening
@@ -663,7 +663,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
          clipSource.connect(offlineContext.destination);
          clipSource.start();
          const renderedData = await offlineContext.startRendering();
-         return getEncoderFor(Number(encodingType)).encode(renderedData);
+         return await getEncoderFor(Number(encodingType)).encode(renderedData);
       }
 
       // Begin listening for incoming audio data
@@ -827,7 +827,7 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
          clipSource.connect(offlineContext.destination);
          clipSource.start();
          const renderedData = await offlineContext.startRendering();
-         return getEncoderFor(Number(encodingType)).encode(renderedData);
+         return await getEncoderFor(Number(encodingType)).encode(renderedData);
       }
 
       // Begin listening for incoming audio data

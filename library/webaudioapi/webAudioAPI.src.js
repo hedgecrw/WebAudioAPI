@@ -58,7 +58,7 @@ export class WebAudioAPI {
    #midiCallbacks = {};
    /** @type {Object.<string, Track>} */
    #tracks = {};
-   /** @type {Array<Effect>} */
+   /** @type {Effect[]} */
    #effects = [];
    /** @type {Object.<string, string>} */
    #instrumentListing = {};
@@ -1111,7 +1111,7 @@ export class WebAudioAPI {
          clipSource.connect(offlineContext.destination);
          clipSource.start();
          const renderedData = await offlineContext.startRendering();
-         return getEncoderFor(Number(encodingType)).encode(renderedData);
+         return await getEncoderFor(Number(encodingType)).encode(renderedData);
       }
 
       // Begin listening for incoming audio data

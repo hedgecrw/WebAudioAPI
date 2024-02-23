@@ -4,12 +4,12 @@ DOCS_DIR              := $(BUILD_DIR)/docs
 LIB_DIR               := $(BUILD_DIR)/lib
 
 DEMO_TARGETS          := netsblox piano score external effects analysis
-TOOL_TARGETS          := instrumentcreator
+TOOL_TARGETS          := instrumentcreator instrumentdecompiler
 
 .PHONY : all clean lib assets docs demos $(DEMO_TARGETS) $(TOOL_TARGETS) run
 
 all :
-	$(info Make target must be one of: clean lib assets docs demos run)
+	$(info Make target must be one of: clean lib assets docs demos run tools)
 
 $(LIB_DIR) :
 	mkdir -p "$@"
@@ -36,14 +36,17 @@ $(DEMO_TARGETS) : lib demoassets
 	cp -f demos/$@/*.js "$(DEMO_DIR)/$@/js/"
 	find demos/$@/* -maxdepth 0 ! -name '*.js' -exec cp -rf "{}" "$(DEMO_DIR)/$@"/  \;
 
-instrumentcreator :
+$(TOOL_TARGETS) :
 	mkdir -p "$(DEMO_DIR)/$@/js"
 	cp -f library/webaudioapi/modules/*.*js "$(DEMO_DIR)/$@/js/"
-	cp -f tools/$@/*.js "$(DEMO_DIR)/$@/js/"
-	find tools/$@/* -maxdepth 0 ! -name '*.js' -exec cp -rf "{}" "$(DEMO_DIR)/$@"/  \;
+	cp -f library/webaudioapi/encoders/*.*js "$(DEMO_DIR)/$@/js/"
+	cp -f tools/$@/*.*js "$(DEMO_DIR)/$@/js/"
+	find tools/$@/* -maxdepth 0 ! -name '*.*js' -exec cp -rf "{}" "$(DEMO_DIR)/$@"/  \;
 
 run :
 	cd $(DEMO_DIR) && python3 -m http.server --cgi 8080
+
+tools : $(TOOL_TARGETS)
 
 clean :
 	rm -rf $(BUILD_DIR)

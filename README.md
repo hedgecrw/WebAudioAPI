@@ -19,18 +19,14 @@ Javascript library to generate music using the Web Audio API
  - Live analysis demo: https://hedgecrw.github.io/WebAudioAPI/analysis
 
 ## Tools
- - New instrument creator: https://hedgecrw.github.io/WebAudioAPI/instrumentcreator
- - Instrument library asset creator: Coming soon
+ - Instrument creator: https://hedgecrw.github.io/WebAudioAPI/instrumentcreator
+ - Instrument decompiler: https://hedgecrw.github.io/WebAudioAPI/instrumentdecompiler
 
 ## Future Work
 
- - [ ] Allow instruments to specify their min/max valid notes
- - [ ] Allow instruments to specify if continuous or decaying
- - [ ] Add note looping for sustained notes if continuous instrument
- - [ ] Add general modulation parameter for entire instrument
- - [ ] Add instrument support for reverb, attack, and decay parameters
- - [ ] Implement instrument library asset creator
- - [ ] Use Sf3 SoundFont format for instrument storage and loading
+ - [ ] Implement modifications framework (staccato, etc.)
+ - [ ] Make instruments respect note ranges specified in metadata
+ - [ ] Fix sustained/looping instrument audio clips to have no silence at end
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
  - [ ] Make library fully General MIDI 2 compliant

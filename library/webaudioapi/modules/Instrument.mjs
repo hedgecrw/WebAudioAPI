@@ -9,8 +9,8 @@
  * @global
  */
 
-import { Frequency, Note } from './Constants.mjs';
-import { decompressSync } from './Fflate.js';
+import { Frequency, Note, InstrumentEncodingType } from './Constants.mjs';
+import * as WebAudioApiErrors from './Errors.mjs';
 
 /**
  * Loads an existing {@link Instrument} object capable of mapping audio data to musical output.
@@ -36,6 +36,42 @@ export async function loadInstrument(audioContext, name, url) {
       return number;
    }
    
+   function parseMetadata(data) {
+      const metadata = {};
+      if (data[0] != 87 || data[1] != 65 || data[2] != 73 || data[3] != 78)
+         return null;
+      metadata.version = [ data[4], data[5], data[6] ];
+      if (metadata.version[0] != 0 || metadata.version[1] != 1 || data.byteLength < 60)
+         return null;
+      metadata.metadataLength = loadNumberFromArray(data, 2, 7);
+      if (metadata.metadataLength != 60)
+         return null;
+      metadata.dataLength = loadNumberFromArray(data, 4, 9);
+      let nameLength = 0;
+      while ((nameLength < 33) && data[13 + nameLength]) ++nameLength;
+      metadata.name = new TextDecoder().decode(new Uint8Array(data.buffer, 13, nameLength));
+      metadata.numNotes = data[46]; metadata.minValidNote = data[47]; metadata.maxValidNote = data[48]; metadata.sustainedNotesDecay = Boolean(data[49]);
+      metadata.sampleRate = loadNumberFromArray(data, 4, 50);
+      metadata.bitRate = loadNumberFromArray(data, 4, 54);
+      metadata.format = loadNumberFromArray(data, 2, 58);
+      return (metadata.format == InstrumentEncodingType.PCM || metadata.format == InstrumentEncodingType.WEBM_OPUS) ? metadata : null;
+   }
+
+   async function decompilePCM(data, metadata) {
+      const zippedBlob = new Blob([data]);
+      const decompressor = new DecompressionStream('gzip');
+      const decompressedStream = zippedBlob.stream().pipeThrough(decompressor);
+      const decompressedData = new Float32Array(await new Response(decompressedStream).arrayBuffer());
+      const audioBuffer = audioContext.createBuffer(1, decompressedData.length, metadata.sampleRate);
+      audioBuffer.copyToChannel(decompressedData, 0);
+      return audioBuffer;
+   }
+
+   async function decompile(data, metadata) {
+      return (metadata.format == InstrumentEncodingType.PCM) ? await decompilePCM(data, metadata) :
+         await audioContext.decodeAudioData(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+   }
+
    function findClosestValidNote(noteData, noteIndex) {
       let nearestLowerNote = -10000, nearestHigherNote = 10000;
       for (let i = noteIndex - 1; i >= 0; --i)
@@ -57,26 +93,33 @@ export async function loadInstrument(audioContext, name, url) {
             const closestValidNote = findClosestValidNote(noteData, note);
             missingData[note] = {
                'buffer': noteData[closestValidNote].buffer,
-               'detune': 100 * (note - closestValidNote)
+               'detune': 100 * (note - closestValidNote),
+               'loop': noteData[closestValidNote].loop,
+               'loopStart': noteData[closestValidNote].loopStart,
+               'loopEnd': noteData[closestValidNote].loopEnd
             };
          }
       missingData[0] = { 'buffer': null, 'detune': 0 };
    }
    
-   async function loadNotesAndInterpolate(instrumentData, noteData, missingData) {
-      let noteIndex = 2;
+   async function loadNotesAndInterpolate(instrumentData, noteData, missingData, metadata) {
+      let noteIndex = 0;
       noteData.length = missingData.length = 1 + Note['B9'];
-      const numValidNotes = loadNumberFromArray(instrumentData, 2, 0);
-      for (let i = 0; i < numValidNotes; ++i) {
+      for (let i = 0; i < metadata.numNotes; ++i) {
          const note = loadNumberFromArray(instrumentData, 2, noteIndex);
          noteIndex += 2;
          const noteOffset = loadNumberFromArray(instrumentData, 4, noteIndex);
          noteIndex += 4;
-         const noteOffsetEnd = loadNumberFromArray(instrumentData, 4, noteIndex);
+         const noteDataLength = loadNumberFromArray(instrumentData, 4, noteIndex);
          noteIndex += 4;
+         const audioBuffer = await decompile(new Uint8Array(instrumentData.buffer, noteOffset, noteDataLength), metadata);
          noteData[note] = {
-            'buffer': await audioContext.decodeAudioData(decompressSync(instrumentData.slice(noteOffset, noteOffsetEnd)).buffer),
-            'detune': 0 };
+            'buffer': audioBuffer,
+            'detune': 0,
+            'loop': !metadata.sustainedNotesDecay,
+            'loopStart': audioBuffer.duration - 1.0,
+            'loopEnd': audioBuffer.duration
+         };
       }
       fillInMissingNotes(noteData, missingData);
    }
@@ -86,7 +129,10 @@ export async function loadInstrument(audioContext, name, url) {
       const response = await fetch(url);
       const resource = await response.arrayBuffer();
       const instrumentData = new Uint8Array(resource);
-      await loadNotesAndInterpolate(instrumentData, foundData, missingData);
+      const metadata = parseMetadata(instrumentData);
+      if (!metadata)
+         throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified instrument file at ${url} is corrupt or of an unexpected type`);
+      await loadNotesAndInterpolate(new Uint8Array(instrumentData.buffer, metadata.metadataLength), foundData, missingData, metadata);
       for (let i = 0; i < foundData.length; ++i)
          noteData[i] = (foundData[i] === undefined) ? missingData[i] : foundData[i];
       return noteData;
@@ -127,7 +173,7 @@ export async function loadInstrument(audioContext, name, url) {
       getNoteOffline: null
    };
 
-   // Actually load and return the instrment
+   // Actually load and return the instrument
    console.log('Loading instrument:', name + '...');
    if (url == null) {
       instrumentInstance.getNote = function (note) {

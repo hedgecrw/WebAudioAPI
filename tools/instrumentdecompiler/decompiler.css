@@ -1,0 +1,29 @@
+body {
+  display: flex;
+  justify-content: center;
+}
+
+p {
+  margin-block-start: 0;
+}
+
+input, button {
+  margin-top: 15px;
+}
+
+span {
+  display: inline;
+}
+
+.upload div {
+  height: 30px;
+}
+
+.error {
+  color: red;
+  font-weight: 600;
+}
+
+.hidden, .hidden2 {
+  visibility: hidden;
+}

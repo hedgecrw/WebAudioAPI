@@ -21,7 +21,7 @@ window.decompileInstrument = async () => {
       displayResult('Progress:', 'Decompiling instrument...', false);
       const [audioData, metadata] = await decompileInstrument(instrumentFiles[0]);
       if (window.decompilationErrors.length > 0)
-         displayResult('Decompilation Errors:', window.generationErrors, true);
+         displayResult(window.decompilationErrors[0].tag, window.decompilationErrors[0].value, true);
       else if (!audioData)
          displayResult('Unknown Error:', 'Unable to decompile instrument data!', true);
       else {
@@ -36,6 +36,7 @@ window.decompileInstrument = async () => {
          document.getElementById('minValidNote').innerHTML = metadata.minValidNote;
          document.getElementById('maxValidNote').innerHTML = metadata.maxValidNote;
          document.getElementById('sustainedDecays').innerHTML = metadata.sustainedNotesDecay ? "true" : "false";
+         document.getElementById('slidesPossible').innerHTML = metadata.slideNotesPossible ? "true" : "false";
          for (const element of document.querySelectorAll('.hidden2'))
             element.classList.remove('hidden2');
       }

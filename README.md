@@ -16,6 +16,7 @@ Javascript library to generate music using the Web Audio API
  - NetsBlox emulation demo: https://hedgecrw.github.io/WebAudioAPI/netsblox
  - Live external device demo: https://hedgecrw.github.io/WebAudioAPI/external
  - Effects manipulation demo: https://hedgecrw.github.io/WebAudioAPI/effects
+ - Note modifications demo: https://hedgecrw.github.io/WebAudioAPI/modifications
  - Live analysis demo: https://hedgecrw.github.io/WebAudioAPI/analysis
 
 ## Tools
@@ -24,10 +25,9 @@ Javascript library to generate music using the Web Audio API
 
 ## Future Work
 
- - [ ] Implement modifications framework (staccato, etc.)
- - [ ] Make instruments respect note ranges specified in metadata
  - [ ] Fix sustained/looping instrument audio clips to have no silence at end
+ - [ ] Introduce the concept of key signatures (make flats/sharps modifications?)
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/
- - [ ] Make library fully General MIDI 2 compliant
  - [ ] See what other effects can be added from https://github.com/jonathanneels/Audio-Input-Effects and from https://alemangui.github.io/pizzicato/
+ - [ ] Make library fully General MIDI 2 compliant

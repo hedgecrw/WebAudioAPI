@@ -41,19 +41,20 @@ export async function loadInstrument(audioContext, name, url) {
       if (data[0] != 87 || data[1] != 65 || data[2] != 73 || data[3] != 78)
          return null;
       metadata.version = [ data[4], data[5], data[6] ];
-      if (metadata.version[0] != 0 || metadata.version[1] != 1 || data.byteLength < 60)
+      if (metadata.version[0] != 0 || metadata.version[1] != 1 || data.byteLength < 61)
          return null;
       metadata.metadataLength = loadNumberFromArray(data, 2, 7);
-      if (metadata.metadataLength != 60)
+      if (metadata.metadataLength != 61)
          return null;
       metadata.dataLength = loadNumberFromArray(data, 4, 9);
       let nameLength = 0;
       while ((nameLength < 33) && data[13 + nameLength]) ++nameLength;
       metadata.name = new TextDecoder().decode(new Uint8Array(data.buffer, 13, nameLength));
-      metadata.numNotes = data[46]; metadata.minValidNote = data[47]; metadata.maxValidNote = data[48]; metadata.sustainedNotesDecay = Boolean(data[49]);
-      metadata.sampleRate = loadNumberFromArray(data, 4, 50);
-      metadata.bitRate = loadNumberFromArray(data, 4, 54);
-      metadata.format = loadNumberFromArray(data, 2, 58);
+      metadata.numNotes = data[46]; metadata.minValidNote = data[47]; metadata.maxValidNote = data[48];
+      metadata.sustainedNotesDecay = Boolean(data[49]); metadata.slideNotesPossible = Boolean(data[50]);
+      metadata.sampleRate = loadNumberFromArray(data, 4, 51);
+      metadata.bitRate = loadNumberFromArray(data, 4, 55);
+      metadata.format = loadNumberFromArray(data, 2, 59);
       return (metadata.format == InstrumentEncodingType.PCM || metadata.format == InstrumentEncodingType.WEBM_OPUS) ? metadata : null;
    }
 
@@ -135,7 +136,7 @@ export async function loadInstrument(audioContext, name, url) {
       await loadNotesAndInterpolate(new Uint8Array(instrumentData.buffer, metadata.metadataLength), foundData, missingData, metadata);
       for (let i = 0; i < foundData.length; ++i)
          noteData[i] = (foundData[i] === undefined) ? missingData[i] : foundData[i];
-      return noteData;
+      return noteData, metadata;
    }
 
    // Create an instance of the Instrument object
@@ -184,11 +185,15 @@ export async function loadInstrument(audioContext, name, url) {
       };
    }
    else {
-      const noteData = await loadInstrument(url);
+      const [noteData, metadata] = await loadInstrument(url);
       instrumentInstance.getNote = function (note) {
+         if ((note < metadata.minValidNote) || (note > metadata.maxValidNote))
+            throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
          return new AudioBufferSourceNode(audioContext, noteData[note]);
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
+         if ((note < metadata.minValidNote) || (note > metadata.maxValidNote))
+            throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
          return new AudioBufferSourceNode(offlineContext, noteData[note]);
       };
    }

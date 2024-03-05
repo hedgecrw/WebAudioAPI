@@ -38,19 +38,7 @@
             }
         },
         {
-            "files": ["AnalysisBase.mjs"],
-            "rules": {
-                "no-unused-vars": "off"
-            }
-        },
-        {
-            "files": ["EffectBase.mjs"],
-            "rules": {
-                "no-unused-vars": "off"
-            }
-        },
-        {
-            "files": ["EncoderBase.mjs"],
+            "files": ["AnalysisBase.mjs", "EffectBase.mjs", "EncoderBase.mjs", "ModificationBase.mjs"],
             "rules": {
                 "no-unused-vars": "off"
             }

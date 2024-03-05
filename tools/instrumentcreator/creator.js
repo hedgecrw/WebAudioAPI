@@ -26,13 +26,14 @@ window.generateInstrument = async () => {
    const minNote = Number(document.getElementById('minNote').value);
    const maxNote = Number(document.getElementById('maxNote').value);
    const decays = document.getElementById('decays').checked;
+   const slides = document.getElementById('slides').checked;
    if (instrumentName.length < 3)
       displayResult('Error:', 'Ensure that you have entered a valid instrument name!', true);
    else if (fileList.length < 1)
       displayResult('Error:', 'Ensure that you have selected at least 1 audio file!', true);
    else {
       displayResult('Progress:', 'Generating instrument...', false);
-      const instrumentData = await createInstrument(instrumentName, fileList, sampleRate, bitRate, format, minNote, maxNote, decays);
+      const instrumentData = await createInstrument(instrumentName, fileList, sampleRate, bitRate, format, minNote, maxNote, decays, slides);
       if (window.generationErrors.length > 0) {
          for (const error of window.generationErrors)
            displayResult(error.tag, error.value, true);

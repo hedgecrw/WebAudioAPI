@@ -41,12 +41,12 @@ export async function decompileInstrument(instrumentFile) {
       window.dispatchEvent(new CustomEvent('webaudioapi_error', { detail: { tag: 'Unknown File Version:', value: version.join('.') } }));
       return null;
     }
-    if (data.byteLength < 60) {
+    if (data.byteLength < 61) {
       window.dispatchEvent(new CustomEvent('webaudioapi_error', { detail: { tag: 'Unexpected File Format:', value: instrumentFile.name } }));
       return null;
     }
     metadata.metadataLength = loadNumberFromArray(data, 2, 7);
-    if (metadata.metadataLength != 60) {
+    if (metadata.metadataLength != 61) {
       window.dispatchEvent(new CustomEvent('webaudioapi_error', { detail: { tag: 'Unexpected File Format:', value: instrumentFile.name } }));
       return null;
     }
@@ -54,10 +54,11 @@ export async function decompileInstrument(instrumentFile) {
     let nameLength = 0;
     while ((nameLength < 33) && data[13 + nameLength]) ++nameLength;
     metadata.name = new TextDecoder().decode(new Uint8Array(data.buffer, 13, nameLength));
-    metadata.numNotes = data[46]; metadata.minValidNote = data[47]; metadata.maxValidNote = data[48]; metadata.sustainedNotesDecay = Boolean(data[49]);
-    metadata.sampleRate = loadNumberFromArray(data, 4, 50);
-    metadata.bitRate = loadNumberFromArray(data, 4, 54);
-    metadata.format = loadNumberFromArray(data, 2, 58);
+    metadata.numNotes = data[46]; metadata.minValidNote = data[47]; metadata.maxValidNote = data[48];
+    metadata.sustainedNotesDecay = Boolean(data[49]); metadata.slideNotesPossible = Boolean(data[50]);
+    metadata.sampleRate = loadNumberFromArray(data, 4, 51);
+    metadata.bitRate = loadNumberFromArray(data, 4, 55);
+    metadata.format = loadNumberFromArray(data, 2, 59);
     if (metadata.format != InstrumentEncodingType.PCM && metadata.format != InstrumentEncodingType.WEBM_OPUS) {
       window.dispatchEvent(new CustomEvent('webaudioapi_error', { detail: { tag: 'Unexpected Encoding Format:', value: metadata.format } }));
       return null;
@@ -106,9 +107,12 @@ export async function decompileInstrument(instrumentFile) {
   const zip = new JSZip();
   const instrumentData = new Uint8Array(await instrumentFile.arrayBuffer());
   const metadata = parseMetadata(instrumentData);
-  const noteData = metadata ? await loadNotes(new Uint8Array(instrumentData.buffer, metadata.metadataLength), metadata) : null;
-  const formatString = (metadata.format == InstrumentEncodingType.WEBM_OPUS) ? '.webm' : '.wav';
-  for (const [midiNumber, noteDatum] of Object.entries(noteData))
-    zip.file(metadata.name + '/audio/' + midiNumber + formatString, noteDatum);
-  return [await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 } }), metadata];
+  if (metadata) {
+    const noteData = await loadNotes(new Uint8Array(instrumentData.buffer, metadata.metadataLength), metadata);
+    const formatString = (metadata.format == InstrumentEncodingType.WEBM_OPUS) ? '.webm' : '.wav';
+    for (const [midiNumber, noteDatum] of Object.entries(noteData))
+      zip.file(metadata.name + '/audio/' + midiNumber + formatString, noteDatum);
+    return [await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 } }), metadata];
+  }
+  return [null, null];
 }

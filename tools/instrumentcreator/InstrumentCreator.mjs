@@ -39,10 +39,11 @@ import { WebmOpusEncoder } from './WebmOpusEncoder.mjs';
  * @param {number} minValidNote - MIDI number of the minimum playable note on the corresponding instrument
  * @param {number} maxValidNote - MIDI number of the maximum playable note on the corresponding instrument
  * @param {boolean} sustainedNotesDecay - Whether a sustained note naturally decays in amplitude over time
+ * @param {boolean} slideNotesPossible - Whether notes can slide smoothly from one to another
  * @returns {Uint8Array} Data ready to be loaded into an {@link Instrument}
  * @async
  */
-export async function createInstrument(name, fileList, sampleRate, bitRate, format, minValidNote, maxValidNote, sustainedNotesDecay) {
+export async function createInstrument(name, fileList, sampleRate, bitRate, format, minValidNote, maxValidNote, sustainedNotesDecay, slideNotesPossible) {
 
   // Private internal InstrumentCreator functions
   async function encodeDataPCM(audioBuffer) {
@@ -101,8 +102,8 @@ export async function createInstrument(name, fileList, sampleRate, bitRate, form
   function generateMetadata(numValidNotes, dataLength) {
     // 'WAIN', Format Version (Major,Minor,Patch), Metadata Length (2 bytes), Instrument Data Length (4 bytes),
     // Inst Name (max 33 bytes), Num Notes (1 byte), Valid Note Range (2 bytes), Sustained Notes Decay (1 byte),
-    // Sample Rate (4 bytes), Bit Rate (4 bytes), Audio Format (2 bytes)
-    const version = [0,1,0], metadataLength = 60;
+    // Slide Notes Possible (1 byte), Sample Rate (4 bytes), Bit Rate (4 bytes), Audio Format (2 bytes)
+    const version = [0,1,0], metadataLength = 61;
     const metadata = new Uint8Array(metadataLength);
     if (name.length > 32) {
       window.dispatchEvent(new CustomEvent('webaudioapi_error', { detail: { tag: 'Name Too Long (>32 characters):', value: name } }));
@@ -117,9 +118,10 @@ export async function createInstrument(name, fileList, sampleRate, bitRate, form
     metadata[47] = minValidNote;
     metadata[48] = maxValidNote;
     metadata[49] = sustainedNotesDecay;
-    storeNumberInArray(metadata, sampleRate, 4, 50);
-    storeNumberInArray(metadata, bitRate, 4, 54);
-    storeNumberInArray(metadata, format, 2, 58);
+    metadata[50] = slideNotesPossible;
+    storeNumberInArray(metadata, sampleRate, 4, 51);
+    storeNumberInArray(metadata, bitRate, 4, 55);
+    storeNumberInArray(metadata, format, 2, 59);
     return metadata;
   }
 

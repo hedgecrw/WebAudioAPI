@@ -1,6 +1,7 @@
-import { Note, Duration, EffectType, EncodingType, AnalysisType } from './modules/Constants.mjs';
-import { createTrack as createTrackImpl } from './modules/Track.mjs';
+import { Note, Duration, EffectType, ModificationType, EncodingType, AnalysisType, KeySignature } from './modules/Constants.mjs';
+import { getModificationParameters, canModifySequence } from './modules/Modification.mjs';
 import { loadEffect, getEffectParameters } from './modules/Effect.mjs';
+import { createTrack as createTrackImpl } from './modules/Track.mjs';
 import { loadInstrument } from './modules/Instrument.mjs';
 import * as WebAudioApiErrors from './modules/Errors.mjs';
 import { getAnalyzerFor } from './modules/Analysis.mjs';
@@ -36,6 +37,14 @@ import { version } from '../../package.json';
  */
 
 /**
+ * Composite object type for holding all key-related information.
+ * 
+ * @typedef {Object} Key
+ * @property {number} signature - Numerical {@link module:Constants.KeySignature KeySignature} indicator based on its circle of fifths position
+ * @property {Array<number>} offsets - Array containing all pitch offsets in the current key signature where the offset for C is at index 0
+ */
+
+/**
  * Composite object type for holding a set of concrete {@link Effect} parameter details.
  * 
  * @typedef {Object} EffectParameter
@@ -44,6 +53,37 @@ import { version } from '../../package.json';
  * @property {Array<string|number>} validValues - For "string" types, a listing of all valid values; for "number" types, the min/max values
  * @property {string|number} defaultValue - Default effect value before any updates
  */
+
+/**
+ * Composite object type for holding a set of note modification details.
+ * 
+ * @typedef {Object} ModificationDetails
+ * @property {number} type - Underlying {@link module:Constants.ModificationType ModificationType}
+ * @property {Object} [value] - Modification-specific values (i.e., slur length, glissando ending note)
+ * @see {@link module:Constants.ModificationType ModificationType}
+ */
+
+// Private helper functions
+function checkModifications(mods, forSingleNote) {
+   for (const modification of mods) {
+      if (!(modification instanceof(Object)) || !('type' in modification))
+         throw new WebAudioApiErrors.WebAudioValueError('The "modifications" parameter must either be unspecified or as returned from the "getModification()" function');
+      else if (!forSingleNote && !canModifySequence(modification.type))
+         throw new WebAudioApiErrors.WebAudioValueError(`The "${modification.type}" modification type cannot be used to modify a sequence of notes`);
+      const requiredParams = forSingleNote ? getModificationParameters(modification.type).required.singleNote : getModificationParameters(modification.type).required.sequence;
+      if (requiredParams.length) {
+         if (!('value' in modification))
+            throw new WebAudioApiErrors.WebAudioValueError(`The "modifications" parameter ({type: ${modification.type}}) is missing a required value.`);
+         else if (!(modification.value instanceof(Object)))
+            throw new WebAudioApiErrors.WebAudioValueError('The "modifications" parameter must be created with the "getModification()" function using a "modificationOptions" parameter of type Object containing required parameter keys and values');
+         else {
+            for (const requiredParam of requiredParams)
+               if (!(requiredParam in modification.value) && ((requiredParams.length > 1) || !('implicit' in modification.value)))
+                  throw new WebAudioApiErrors.WebAudioValueError(`The "modifications" parameter ({type: ${modification.type}}) is missing the following required value: ${requiredParam}`);
+         }
+      }
+   }
+}
 
 /** Contains all WebAudioAPI top-level functionality. */
 export class WebAudioAPI {
@@ -54,23 +94,25 @@ export class WebAudioAPI {
    // WebAudioAPI private variable definitions
    #started = false;
    #audioContext = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
-   /** @type {Object.<string, Object>} */
+   /** @type {Object<string, Object>} */
    #midiCallbacks = {};
-   /** @type {Object.<string, Track>} */
+   /** @type {Object<string, Track>} */
    #tracks = {};
    /** @type {Effect[]} */
    #effects = [];
-   /** @type {Object.<string, string>} */
+   /** @type {Object<string, string>} */
    #instrumentListing = {};
-   /** @type {Object.<string, Instrument>} */
+   /** @type {Object<string, Instrument>} */
    #loadedInstruments = {};
    /** @type {Tempo} */
    #tempo = { measureLengthSeconds: (4 * 60.0 / 100.0), beatBase: 4, beatsPerMinute: 100, timeSignatureNumerator: 4, timeSignatureDenominator: 4 };
+   /** @type {Key} */
+   #key = { signature: 0, offsets: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] };
    /** @type {MIDIAccess|null} */
    #midiDeviceAccess = null;
-   /** @type {Object.<string, string>} */
+   /** @type {Object<string, string>} */
    #audioInputDevices = {};
-   /** @type {Object.<string, string>} */
+   /** @type {Object<string, string>} */
    #audioOutputDevices = {};
    /** @type {DynamicsCompressorNode} */
    #compressorNode;
@@ -125,7 +167,7 @@ export class WebAudioAPI {
     * function must be the **numeric MIDI value** associated with a certain
     * {@link module:Constants.Note Note}, not a string-based key.
     * 
-    * @returns {Object.<string, number>} Listing of recognized musical notes by the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of recognized musical notes by the {@link WebAudioAPI} library
     * @see {@link module:Constants.Note Note}
     */
    getAvailableNotes() {
@@ -140,11 +182,27 @@ export class WebAudioAPI {
     * {@link WebAudioAPI#playNote playNote()} function must be the **numeric value** associated
     * with a certain {@link module:Constants.Duration Duration}, not a string-based key.
     * 
-    * @returns {Object.<string, number>} Listing of recognized note durations by the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of recognized note durations by the {@link WebAudioAPI} library
     * @see {@link module:Constants.Duration Duration}
     */
    getAvailableNoteDurations() {
       return Duration;
+   }
+
+   /**
+    * Returns a listing of all available note modifications in the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available note modification options for displaying
+    * on a web page. Note, however, that the modification `type` parameter passed to the
+    * {@link WebAudioAPI#getModification getModification()} function must include the **numeric
+    * value** associated with a certain {@link module:Constants.ModificationType ModificationType},
+    * not a string-based key.
+    * 
+    * @returns {Object<string, number>} Listing of all available note modifications in the {@link WebAudioAPI} library
+    * @see {@link module:Constants.ModificationType ModificationType}
+    */
+   getAvailableNoteModifications() {
+      return ModificationType;
    }
 
    /**
@@ -157,7 +215,7 @@ export class WebAudioAPI {
     * **numeric value** associated with a certain {@link module:Constants.EffectType EffectType},
     * not a string-based key.
     * 
-    * @returns {Object.<string, number>} Listing of all available effect types in the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of all available effect types in the {@link WebAudioAPI} library
     * @see {@link module:Constants.EffectType EffectType}
     */
    getAvailableEffects() {
@@ -174,7 +232,7 @@ export class WebAudioAPI {
     * associated with a certain {@link module:Constants.EffectType EffectType}, not a
     * string-based key.
     * 
-    * @param {number} effectType - {@link module:Constants.EffectType EffectType} for which to return a parameter list
+    * @param {number} effectType - The {@link module:Constants.EffectType EffectType} for which to return a parameter list
     * @returns {EffectParameter[]} List of effect-specific parameters available for updating
     * @see {@link module:Constants.EffectType EffectType}
     * @see {@link EffectParameter}
@@ -186,12 +244,42 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns a list of modification-specific parameters for use in the `modificationOptions`
+    * parameter of the {@link WebAudioAPI#getModification getModification()} function or
+    * an empty list if the specified modification does not require any parameters.
+    * 
+    * This function can be used to enumerate available modification parameters for displaying
+    * on a web page. Note, however, that the `modificationType` parameter must be the **numeric
+    * value** associated with a certain {@link module:Constants.ModificationType ModificationType},
+    * not a string-based key.
+    * 
+    * The object returned from this function will contain 2 keys: 'required' and 'optional'.
+    * These keys can be used to access sub-objects with 2 keys: 'singleNote' and 'sequence'.
+    * These keys hold arrays containing the string-based names of parameters that are available
+    * for manipulation within the given modification.
+    * 
+    * Parameter values within the "sequence" array indicate parameters that have meaning when
+    * used with the {@link WebAudioAPI#playSequence playSequence()} function. Parameter values
+    * within the "singleNote" array indicate parameters that have meaning when used with the 
+    * {@link WebAudioAPI#playNote playNote()} function.
+    * 
+    * @param {number} modificationType - The {@link module:Constants.ModificationType ModificationType} for which to return a parameter list
+    * @returns {Object<string,Object<string,string[]>>} List of modification-specific parameter keys and when they are required
+    * @see {@link module:Constants.ModificationType ModificationType}
+    */
+   getAvailableModificationParameters(modificationType) {
+      if (!Object.values(ModificationType).includes(Number(modificationType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target modification type identifier (${modificationType}) does not exist`);
+      return getModificationParameters(modificationType);
+   }
+
+   /**
     * Returns a listing of all available encoders in the {@link WebAudioAPI} library.
     * 
     * This function can be used to enumerate available encoding options for displaying on a
     * web page.
     * 
-    * @returns {Object.<string, number>} Listing of all available encoding types in the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of all available encoding types in the {@link WebAudioAPI} library
     * @see {@link module:Constants.EncodingType EncodingType}
     */
    getAvailableEncoders() {
@@ -204,7 +292,7 @@ export class WebAudioAPI {
     * This function can be used to enumerate available analysis options for displaying on a
     * web page.
     * 
-    * @returns {Object.<string, number>} Listing of all available audio analysis types in the {@link WebAudioAPI} library
+    * @returns {Object<string, number>} Listing of all available audio analysis types in the {@link WebAudioAPI} library
     * @see {@link module:Constants.AnalysisType AnalysisType}
     */
    getAvailableAnalysisTypes() {
@@ -373,6 +461,32 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns a properly formatted structure containing the relevant musical modification and
+    * parameters passed into this function.
+    * 
+    * Note that the `modificationOptions` parameter should normally be either omitted/undefined
+    * or an `Object` containing the required keys as returned by the
+    * {@link WebAudioAPI#getAvailableModificationParameters getAvailableModificationParameters()}
+    * function; however, if there is only one required key, you may simply pass a numerical
+    * value to `modificationOptions` instead of explicitly enumerating an Object with the single
+    * required key.
+    * 
+    * @param {number} modificationType - Number corresponding to the {@link module:Constants.ModificationType ModificationType} to generate
+    * @param {Object|number} [modificationOptions] - Potential modification-specific options as returned by {@link WebAudioAPI#getAvailableModificationParameters getAvailableModificationParameters()}
+    * @returns {ModificationDetails} A structure containing the relevant musical modification details passed into this function
+    * @see {@link module:Constants.ModificationType ModificationType}
+    */
+   getModification(modificationType, modificationOptions) {
+      if (!Object.values(ModificationType).includes(Number(modificationType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target modification type identifier (${modificationType}) does not exist`);
+      else if (modificationOptions && Array.isArray(modificationOptions))
+         throw new WebAudioApiErrors.WebAudioValueError('The "modificationOptions" parameter must be either a number or an "Object" with keys as specified in getAvailableModificationParameters()');
+      const options = (!modificationOptions || ((typeof(modificationOptions) === 'object') && ('value' in modificationOptions))) ? modificationOptions : 
+         { value: ((typeof(modificationOptions) === 'object') ? modificationOptions : { implicit: modificationOptions }) };
+      return { type: modificationType, ...options };
+   }
+
+   /**
     * Creates a track capable of playing sequential audio. A single track can only utilize a
     * single instrument at a time.
     * 
@@ -380,7 +494,7 @@ export class WebAudioAPI {
     */
    createTrack(name) {
       this.removeTrack(name);
-      this.#tracks[name] = createTrackImpl(name, this.#audioContext, this.#tempo, this.#sourceSinkNode);
+      this.#tracks[name] = createTrackImpl(name, this.#audioContext, this.#tempo, this.#key, this.#sourceSinkNode);
    }
 
    /**
@@ -462,6 +576,15 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns the current global {@link Key} parameters for all audio tracks.
+    * 
+    * @returns {Key} Global {@link Key} parameters and settings
+    */
+   getKeySignature() {
+      return {...this.#key};
+   }
+
+   /**
     * Converts a note {@link module:Constants.Duration Duration} into a corresponding number of seconds given the
     * current {@link Tempo} settings.
     * 
@@ -504,6 +627,39 @@ export class WebAudioAPI {
       this.#tempo.timeSignatureNumerator = timeSignatureNumerator ? Number(timeSignatureNumerator) : this.#tempo.timeSignatureNumerator;
       this.#tempo.timeSignatureDenominator = timeSignatureDenominator ? Number(timeSignatureDenominator) : this.#tempo.timeSignatureDenominator;
       this.#tempo.measureLengthSeconds = (60.0 / this.#tempo.beatsPerMinute) * this.#tempo.beatBase * this.#tempo.timeSignatureNumerator / this.#tempo.timeSignatureDenominator;
+   }
+
+   /**
+    * Updates the global key signature parameters for all audio tracks.
+    * 
+    * The `keySignature` parameter should correspond to the location of the desired key on the
+    * circle of fifths as returned by the {@link module:Constants.KeySignature KeySignature}
+    * constant values.
+    * 
+    * @param {number} keySignature - Numerical {@link module:Constants.KeySignature KeySignature} indicator based on its circle of fifths position
+    */
+   updateKeySignature(keySignature) {
+      if (!Object.values(KeySignature).includes(Number(keySignature)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target key signature (${keySignature}) does not exist`);
+      const noteOffsets = {
+         [KeySignature.CMajor]: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [KeySignature.DMajor]: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+         [KeySignature.EMajor]: [1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+         [KeySignature.FMajor]: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+         [KeySignature.GMajor]: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+         [KeySignature.AMajor]: [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+         [KeySignature.BMajor]: [1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+         [KeySignature.CSharpMajor]: [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+         [KeySignature.FSharpMajor]: [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0],
+         [KeySignature.CFlatMajor]: [-1, 0, -1, 0, -1, -1, 0, -1, 0, -1, 0, -1],
+         [KeySignature.DFlatMajor]: [0, 0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1],
+         [KeySignature.EFlatMajor]: [0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, -1],
+         [KeySignature.GFlatMajor]: [-1, 0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1],
+         [KeySignature.AFlatMajor]: [0, 0, -1, 0, -1, 0, 0, 0, 0, -1, 0, -1],
+         [KeySignature.BFlatMajor]: [0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -1]
+      };
+      this.#key.signature = Number(keySignature);
+      this.#key.offsets = noteOffsets[Number(keySignature)];
    }
 
    /**
@@ -802,21 +958,99 @@ export class WebAudioAPI {
     * associated with one of the notes returned from
     * {@link WebAudioAPI#getAvailableNotes getAvailableNotes()}.
     * 
+    * The `modifications` parameter is optional, and if included, may either be a single
+    * {@link ModificationDetails} structure or a list of such structures. This structure should
+    * be obtained from the {@link WebAudioAPI#getModification getModification()} function.
+    * 
     * @param {string} trackName - Name of the track on which to play the note
     * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
-    * @param {number} [velocity=0.75] - Intensity of the note being played between [0.0, 1.0]
+    * @param {ModificationDetails|ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the note
     * @returns {Promise<number>} Duration (in seconds) of the note being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
+    * @see {@link module:Constants.ModificationType ModificationType}
+    * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playNote(trackName, note, startTime, duration, velocity=0.75) {
+   async playNote(trackName, note, startTime, duration, modifications=[]) {
+      const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
-         throw new WebAudioApiErrors.WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
-      return await this.#tracks[trackName].playNote(Number(note), Number(velocity), Number(startTime), Number(duration));
+      else
+         checkModifications(mods, true);
+      return await this.#tracks[trackName].playNote(Number(note), Number(startTime), Number(duration), mods);
+   }
+
+   /**
+    * Schedules a chord of notes to be played on a specific track.
+    * 
+    * Note that the `chord` parameter should be an array of `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification to the chord, a list of modifications, or
+    * omitted completely.
+    * 
+    * The `modifications` parameter is optional, and if included, may either be a single
+    * {@link ModificationDetails} structure or a list of such structures. This structure should
+    * be obtained from the {@link WebAudioAPI#getModification getModification()} function.
+    * 
+    * @param {string} trackName - Name of the track on which to play the note
+    * @param {Array<Array>} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
+    * @param {number} startTime - Global API time at which to start playing the chord
+    * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the chord
+    * @returns {Promise<number>} Duration (in seconds) of the chord being played
+    * @see {@link module:Constants.Note Note}
+    * @see {@link module:Constants.Duration Duration}
+    * @see {@link module:Constants.ModificationType ModificationType}
+    * @see {@link WebAudioAPI#getModification getModification()}
+    */
+   async playChord(trackName, chord, startTime, modifications=[]) {
+      const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      else if (!Array.isArray(chord) || !Array.isArray(chord[0]))
+         throw new WebAudioApiErrors.WebAudioValueError('The "chord" parameter must be an array of tuples');
+      else
+         checkModifications(mods, true);
+      return await this.#tracks[trackName].playChord(chord, Number(startTime), mods);
+   }
+
+   /**
+    * Schedules a musical sequence to be played on a specific track.
+    * 
+    * Note that the `sequence` parameter should be an array containing either chords (as
+    * defined in the {@link playChord playChord()} function) or `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification that affects the whole sequence, a list of
+    * modifications, or omitted completely.
+    * 
+    * The `modifications` parameter is optional, and if included, may either be a single
+    * {@link ModificationDetails} structure or a list of such structures. This structure should
+    * be obtained from the {@link WebAudioAPI#getModification getModification()} function.
+    * 
+    * @param {string} trackName - Name of the track on which to play the note
+    * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
+    * @param {number} startTime - Global API time at which to start playing the sequence
+    * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the sequence
+    * @returns {Promise<number>} Duration (in seconds) of the sequence being played
+    * @see {@link module:Constants.Note Note}
+    * @see {@link module:Constants.Duration Duration}
+    * @see {@link module:Constants.ModificationType ModificationType}
+    * @see {@link WebAudioAPI#getModification getModification()}
+    */
+   async playSequence(trackName, sequence, startTime, modifications=[]) {
+      const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
+      if (!(trackName in this.#tracks))
+         throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
+      else if (!Array.isArray(sequence) || !Array.isArray(sequence[0]))
+         throw new WebAudioApiErrors.WebAudioValueError('The "sequence" parameter must be either an array of tuples or an array of an array of tuples');
+      else
+         checkModifications(mods, false);
+      return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods);
    }
 
    /**

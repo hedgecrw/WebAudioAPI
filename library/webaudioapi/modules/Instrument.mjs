@@ -136,7 +136,7 @@ export async function loadInstrument(audioContext, name, url) {
       await loadNotesAndInterpolate(new Uint8Array(instrumentData.buffer, metadata.metadataLength), foundData, missingData, metadata);
       for (let i = 0; i < foundData.length; ++i)
          noteData[i] = (foundData[i] === undefined) ? missingData[i] : foundData[i];
-      return noteData, metadata;
+      return [noteData, metadata];
    }
 
    // Create an instance of the Instrument object
@@ -187,12 +187,12 @@ export async function loadInstrument(audioContext, name, url) {
    else {
       const [noteData, metadata] = await loadInstrument(url);
       instrumentInstance.getNote = function (note) {
-         if ((note < metadata.minValidNote) || (note > metadata.maxValidNote))
+         if (note && (note < metadata.minValidNote) || (note > metadata.maxValidNote))
             throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
          return new AudioBufferSourceNode(audioContext, noteData[note]);
       };
       instrumentInstance.getNoteOffline = function (offlineContext, note) {
-         if ((note < metadata.minValidNote) || (note > metadata.maxValidNote))
+         if (note && (note < metadata.minValidNote) || (note > metadata.maxValidNote))
             throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is unplayable on this instrument. Valid notes are [${metadata.minValidNote}, ${metadata.maxValidNote}]`);
          return new AudioBufferSourceNode(offlineContext, noteData[note]);
       };

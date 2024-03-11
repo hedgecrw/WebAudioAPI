@@ -6,7 +6,7 @@
 
 /**
  * Object representing a mapping between a General MIDI command and its protocol value.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const MidiCommand = {
    Unknown: 0x00, NoteOff: 0x80, NoteOn: 0x90, Aftertouch: 0xA0, ContinuousController: 0xB0,
@@ -15,7 +15,7 @@ export const MidiCommand = {
 
 /**
  * Object representing a mapping between a General MIDI instrument and its patch number.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const MidiInstrument = {
    'Grand Piano': 0x00, 'Bright Piano': 0x01, 'Electric Grand Piano': 0x02, 'Honky Tonk Piano': 0x03,

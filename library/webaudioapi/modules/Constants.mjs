@@ -7,7 +7,7 @@
 
 /**
  * Object representing a mapping between the notational name of a musical note and its MIDI value.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const Note = {  Rest: 0,
    C0: 12,             D0bb: 12,  C0s: 13,              D0b: 13,   D0: 14,  C0ss: 14,  E0bb: 14,
@@ -72,7 +72,7 @@ export const Frequency = [
 
 /**
  * Object representing a mapping between the notational name of a musical duration and its associated beat scaling factor.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const Duration = {
           Whole: 1.0,         DottedWhole: 2.0 / 3.0,          DottedDottedWhole: 4.0 / 7.0,
@@ -85,8 +85,21 @@ export const Duration = {
 };
 
 /**
+ * Object representing a mapping between the notational name of a key signature and its position on the circle of fifths.
+ * @constant {Object<string, number>}
+ */
+export const KeySignature = {
+   CMajor: 0, DMajor: 2, EMajor: 4, FMajor: -1, GMajor: 1, AMajor: 3,
+   BMajor: 5, CSharpMajor: 7, FSharpMajor: 6, CFlatMajor: -7, DFlatMajor: -5,
+   EFlatMajor: -3, GFlatMajor: -6, AFlatMajor: -4, BFlatMajor: -2,
+   CMinor: -3, DMinor: -1, EMinor: 1, FMinor: -4, GMinor: -2, AMinor: 0,
+   BMinor: 2, CSharpMinor: 4, DSharpMinor: 6, FSharpMinor: 3, GSharpMinor: 5,
+   ASharpMinor: 7, EFlatMinor: -6, AFlatMinor: -7, BFlatMinor: -5
+};
+
+/**
  * Object representing a mapping between an effect type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const EffectType = {
    Reverb: 11, Delay: 12, Echo: 13, PitchShift: 14, Doppler: 15,                    // Time-Based Effects
@@ -97,8 +110,25 @@ export const EffectType = {
 };
 
 /**
+ * Object representing a mapping between a note modification and its unique internal code.
+ * @constant {Object<string, number>}
+ */
+export const ModificationType = {
+   Accent: 1, Marcato: 2, Staccato: 3, Staccatissimo: 4, Tenuto: 5, Sforzando: 6,   // Single-note articulations
+   Slur: 20, Portamento: 21, Crescendo: 22, Decrescendo: 23, Diminuendo: 24,        // Multi-note articulations
+   TrillUpper: 40, TrillLower: 41, MordentUpper: 42, MordentLower: 43,              // Implicit ornamentations (adds notes)
+   TurnUpper: 44, TurnLower: 45, Glissando: 46,
+   GraceAcciaccatura: 60, GraceAppoggiatura: 61,                                    // Explicit ornamentations (alters single note)
+   Tie: 80, OctaveShiftUp: 81, OctaveShiftDown: 82,                                 // Miscellaneous modifications
+   Velocity: 100, Piano: 101, Forte: 102, MezzoPiano: 103, MezzoForte: 104,         // Loudness modifications
+   Pianissimo: 105, Fortissimo: 106, Pianississimo: 107, Fortississimo: 108,
+   Tuplet: 120, Triplet: 121, Quintuplet: 122, Sextuplet: 123,                      // Duration modifications
+   Septuplet: 124, Fermata: 125
+};
+
+/**
  * Object representing a mapping between an acoustic analysis type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const AnalysisType = {
    TimeSeries: 1, PowerSpectrum: 2, TotalPower: 3
@@ -106,7 +136,7 @@ export const AnalysisType = {
 
 /**
  * Object representing a mapping between an encoding file type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const EncodingType = {
    WAV: 1
@@ -114,7 +144,7 @@ export const EncodingType = {
 
 /**
  * Object representing a mapping between an instrument file encoding type and its unique internal code.
- * @constant {Object.<string, number>}
+ * @constant {Object<string, number>}
  */
 export const InstrumentEncodingType = {
    PCM: 0, WEBM_OPUS: 1

@@ -67,7 +67,6 @@ for (let i = 0; i < 32768; ++i) {
 }
 // create huffman tree from u8 "map": index -> code length for code index
 // mb (max bits) must be at most 15
-// TODO: optimize/split up?
 let hMap = (function (cd, mb, r) {
    let s = cd.length;
    // index
@@ -476,7 +475,6 @@ let hTree = function (d, mb) {
    let mbt = ln(t[i1 - 1], tr, 0);
    if (mbt > mb) {
       // more algorithms from UZIP.js
-      // TODO: find out how this code works (debt)
       //  ind    debt
       let i = 0, dt = 0;
       //    left            cost
@@ -1998,7 +1996,6 @@ let AsyncZipDeflate = /*#__PURE__*/ (function () {
    return AsyncZipDeflate;
 }());
 export { AsyncZipDeflate };
-// TODO: Better tree shaking
 /**
  * A zippable archive to which files can incrementally be added
  */

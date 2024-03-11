@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <title>WebAudioAPI Note Modifications Demo</title>
+    <link rel="stylesheet" href="modsdemo.css">
+    <script type="module" src="js/webAudioAPI.js"></script>
+    <script src="js/modsdemo.js"></script>
+  </head>
+
+  <body>
+
+    <div class="controls">
+      <div id="playButton" class="button" onclick="play()">Play</div>
+      <div id="stopButton" class="button disabled" onclick="stop()">Stop</div>
+    </div>
+
+    <div class="controls">
+      <label for="modSelector">Active Modification:&nbsp;</label>
+      <select name="modSelector" id="modSelector" onchange="changeModification(this.value)"></select>
+    </div>
+
+    <div class="controls">
+      <img id="modExample" src="images/Blank.png" alt="Notated Example of Modification">
+    </div>
+
+  </body>
+
+</html>

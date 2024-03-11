@@ -10,7 +10,8 @@
  */
 
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
-import { EncodingType, AnalysisType } from './Constants.mjs';
+import { loadModification, inferModificationParametersFromSequence, NoteDetails, GlobalDynamic } from './Modification.mjs';
+import { EncodingType, AnalysisType, ModificationType } from './Constants.mjs';
 import * as WebAudioApiErrors from './Errors.mjs';
 import { getEncoderFor } from './Encoder.mjs';
 import { loadEffect } from './Effect.mjs';
@@ -21,17 +22,19 @@ import { loadEffect } from './Effect.mjs';
  * @param {string} name - Name of the track to create
  * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @param {Tempo} tempo - Reference to the {@link Tempo} object stored in the global {@link WebAudioAPI} object
+ * @param {Key} keySignature - Reference to the {@link Key} object stored in the global {@link WebAudioAPI} object
  * @param {AudioNode} trackAudioSink - Reference to the {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode} to which the output of this track should be connected
  * @returns {Track} Newly created audio {@link Track}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioNode AudioNode}
+ * @see {@link Key}
  * @see {@link Track}
  * @see {@link Tempo}
  */
-export function createTrack(name, audioContext, tempo, trackAudioSink) {
+export function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
 
    // Track-local variable definitions
-   let instrument = null, midiDevice = null, audioDeviceInput = null;
+   let instrument = null, midiDevice = null, audioDeviceInput = null, currentVelocity = 0.5;
    const audioSources = [], asyncAudioSources = [], effects = [];
    const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
    const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
@@ -235,11 +238,11 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
    function playNoteAsync(note, velocity) {
       if (!instrument)
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
-      const noteSource = instrument.getNote(note); // TODO: Method to getNoteContinuous so it loops
+      const noteSource = instrument.getNote(note);
       const noteVolume = new GainNode(audioContext, { gain: velocity });
       noteSource.connect(noteVolume).connect(audioSink);
       const noteStorage = createAsyncNote(note, noteSource, noteVolume);
-      noteSource.onended = stopNoteAsync.bind(this, noteStorage); // TODO: Don't need this if continuous instrument
+      noteSource.onended = stopNoteAsync.bind(this, noteStorage);
       asyncAudioSources.push(noteStorage);
       noteSource.start(audioContext.currentTime);
       return noteStorage;
@@ -253,26 +256,113 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
     * {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()}.
     * Likewise, the `note` parameter should correspond to a valid MIDI note number.
     * 
+    * The `modifications` parameter may either be a single {@link ModificationDetails}
+    * structure or a list of such structures.
+    * 
     * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
-    * @param {number} velocity - Intensity of the note being played between [0.0, 1.0]
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
+    * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
     * @returns {number} Duration (in seconds) of the note being played
     * @memberof Track
     * @instance
     */
-   function playNote(note, velocity, startTime, duration) {
+   function playNote(note, startTime, duration, modifications) {
       if (!instrument)
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
-      const durationSeconds = (duration < 0) ? -duration : (60.0 / ((duration / tempo.beatBase) * tempo.beatsPerMinute));
-      const noteSource = instrument.getNote(note);
-      const noteVolume = new GainNode(audioContext, { gain: velocity });
-      noteSource.connect(noteVolume).connect(audioSink);
-      noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds, 0.03);
-      noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
-      audioSources.push(noteSource);
-      noteSource.start(startTime, 0, durationSeconds + 0.200);
-      return durationSeconds;
+      // TODO: Step 1, remove duplicates (keep last duplicate)
+      // TODO: Order by type (re-order types so that they make sense when applied), 1. GlobalDynamic, 2. Velocity changes (gradual then accents), 3. Start Time Offsets, 4. Duration changes, 5. Add notes
+      // TODO: Ensure no modification velocity is cumulative (if played in a chord, it would accumulate)
+      let totalDurationSeconds = 0.0;
+      let noteDetails = [new NoteDetails(note, currentVelocity, duration)];
+      for (const modification of modifications) {
+         const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
+         noteDetails = modClass.getModifiedNoteDetails(modification.value);
+         if ((modification.type == ModificationType.Crescendo) || (modification.type == ModificationType.Decrescendo) ||
+             (modification.type == ModificationType.Diminuendo) || (modClass instanceof GlobalDynamic))
+            currentVelocity = noteDetails[0].velocity;
+      }
+      for (const note of noteDetails) {
+         const durationSeconds = (note.duration < 0) ? -note.duration : (60.0 / ((note.duration / tempo.beatBase) * tempo.beatsPerMinute));
+         const noteSource = instrument.getNote(note.note);
+         const noteVolume = new GainNode(audioContext, { gain: note.velocity });
+         noteSource.connect(noteVolume).connect(audioSink);
+         noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
+         noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
+         audioSources.push(noteSource);
+         noteSource.start(startTime + note.startTimeOffset, 0, durationSeconds + 0.200);
+         totalDurationSeconds += (note.usedDuration <= 0) ? -note.usedDuration : (60.0 / ((note.usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
+      }
+      return totalDurationSeconds;
+   }
+
+   /**
+    * Schedules a chord of notes to be played on the current track.
+    * 
+    * Note that the `chord` parameter should be an array of `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification to the chord, a list of modifications, or
+    * omitted completely.
+    * 
+    * The `modifications` parameter may either be a single {@link ModificationDetails}
+    * structure or a list of such structures.
+    * 
+    * @param {Array<Array>}} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
+    * @param {number} startTime - Global API time at which to start playing the chord
+    * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the chord
+    * @returns {number} Duration (in seconds) of the chord being played
+    * @memberof Track
+    * @instance
+    */
+   function playChord(chord, startTime, modifications) {
+      let minDuration = Number.POSITIVE_INFINITY;
+      for (const chordItem of chord) {
+         const [note, duration, noteMods] = chordItem;
+         const mods = modifications.concat(noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []);
+         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods));
+      }
+      return minDuration;
+   }
+
+   /**
+    * Schedules a musical sequence to be played on the current track.
+    * 
+    * Note that the `sequence` parameter should be an array containing either chords (as
+    * defined in the {@link playChord playChord()} function) or `[note, duration, mods]` tuples,
+    * where the `note` parameter should correspond to a valid MIDI note number, the `duration`
+    * parameter should correspond to the beat scaling factor associated with one of the note
+    * durations from {@link WebAudioAPI#getAvailableNoteDurations getAvailableNoteDurations()},
+    * and `mods` may either be a single modification that affects the whole sequence, a list of
+    * modifications, or omitted completely.
+    * 
+    * The `modifications` parameter may either be a single {@link ModificationDetails}
+    * structure or a list of such structures.
+    * 
+    * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
+    * @param {number} startTime - Global API time at which to start playing the sequence
+    * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the sequence
+    * @returns {number} Duration (in seconds) of the sequence being played
+    * @memberof Track
+    * @instance
+    */
+   function playSequence(sequence, startTime, modifications) {
+      let noteIndex = 0;
+      const originalStartTime = startTime;
+      for (const sequenceItem of sequence) {
+         ++noteIndex;
+         for (const modification of modifications)
+            modification.value = inferModificationParametersFromSequence(modification.type, sequence, noteIndex, modification.value);
+         if (Array.isArray(sequenceItem[0]))
+            startTime += playChord(sequenceItem, startTime, modifications);
+         else {
+            const [note, duration, noteMods] = sequenceItem;
+            const mods = (noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []).concat(modifications);
+            startTime += playNote(Number(note), startTime, Number(duration), mods);
+         }
+      }
+      return startTime - originalStartTime;
    }
 
    /**
@@ -322,13 +412,13 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
                   unmatchedNotes[note] = [ Number(noteTime), getMidiVelocity(midiData) ];
                else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
                   const noteDuration = ((!duration || (Number(noteTime) <= duration)) ? Number(noteTime) : duration) - unmatchedNotes[note][0];
-                  playNote(note, unmatchedNotes[note][1], startTime + unmatchedNotes[note][0], -noteDuration);
+                  playNote(note, startTime + unmatchedNotes[note][0], -noteDuration, [{ type: ModificationType.Velocity, value: unmatchedNotes[note][1] }]);
                   delete unmatchedNotes[note];
                }
             }
          for (const [note, noteData] of Object.entries(unmatchedNotes)) {
             const noteDuration = audioClip.getDuration() - noteData[0];
-            playNote(note, noteData[1], startTime + noteData[0], -noteDuration);
+            playNote(note, startTime + noteData[0], -noteDuration, [{ type: ModificationType.Velocity, value: noteData[1] }]);
          }
          expectedDuration = (duration && (duration < audioClip.getDuration())) ? duration : audioClip.getDuration();
       }
@@ -954,7 +1044,8 @@ export function createTrack(name, audioContext, tempo, trackAudioSink) {
        */
       name,
       updateInstrument, removeInstrument, applyEffect, updateEffect, getCurrentEffectParameters, removeEffect, stopNoteAsync,
-      playNoteAsync, playNote, playClip, playFile, recordMidiClip, recordAudioClip, recordOutput, connectToMidiDevice,
-      disconnectFromMidiDevice, connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack, clearTrack, getAnalysisBuffer
+      playNoteAsync, playNote, playChord, playSequence, playClip, playFile, recordMidiClip, recordAudioClip, recordOutput,
+      connectToMidiDevice, disconnectFromMidiDevice, connectToAudioInputDevice, disconnectFromAudioInputDevice, deleteTrack,
+      clearTrack, getAnalysisBuffer
    };
 }

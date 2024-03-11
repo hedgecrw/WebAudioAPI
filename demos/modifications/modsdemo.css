@@ -1,0 +1,53 @@
+label {
+  margin: auto 2px auto 6px;
+}
+
+input {
+  width: 300px;
+}
+
+span {
+  display: inline-flex;
+  width: 50px;
+}
+
+img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.right {
+  justify-content: right;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  margin: 12px auto 12px auto;
+}
+
+.button {
+  margin: 10px 3px 0 3px;
+  background-color: #CCCCCC;
+  border: 1px solid #CCCCCC;
+  border-radius: 2px;
+  padding: 5px 20px;
+  text-align: center;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.button:hover {
+  cursor: pointer;
+  background-color: #999999;
+}
+
+.disabled {
+  color:  grey;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+#modSelector {
+  margin-right: 10px;
+}

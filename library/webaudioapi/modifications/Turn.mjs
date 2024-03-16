@@ -80,12 +80,19 @@ export class Turn extends ModificationBase {
     * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
     */
    getModifiedNoteDetails(details) {
-      const upperOffset = (details && ('upperOffset' in details)) ? Number(details.upperOffset) : Turn.upperOffsetsMajor[this.unmodifiedDetails.note % 12];
-      const lowerOffset = (details && ('lowerOffset' in details)) ? Number(details.lowerOffset) : Turn.lowerOffsetsMajor[this.unmodifiedDetails.note % 12];
-      if (!Number.isInteger(upperOffset) || (upperOffset < 1))
-         throw new WebAudioApiErrors.WebAudioValueError(`The "upperOffset" value (${upperOffset}) must be a positive integer > 0`);
-      else if (!Number.isInteger(lowerOffset) || (lowerOffset < 1))
-         throw new WebAudioApiErrors.WebAudioValueError(`The "lowerOffset" value (${lowerOffset}) must be a positive integer > 0`);
+      let upperNote = this.unmodifiedDetails.note, lowerNote = this.unmodifiedDetails.note;
+      if (details && ('upperOffset' in details))
+         upperNote += Number(details.upperOffset);
+      else {
+         upperNote += Turn.upperOffsetsMajor[upperNote % 12];
+         upperNote += this.key.offsets[upperNote % 12];
+      }
+      if (details && ('lowerOffset' in details))
+         lowerNote -= Number(details.lowerOffset);
+      else {
+         lowerNote -= Turn.lowerOffsetsMajor[lowerNote % 12];
+         lowerNote += this.key.offsets[lowerNote % 12];
+      }
       const turnNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
       const primaryNoteDuration = ((this.unmodifiedDetails.duration < 0) ?
          -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute))) -
@@ -97,7 +104,7 @@ export class Turn extends ModificationBase {
          0.0
       ),
       new NoteDetails(
-         this.unmodifiedDetails.note + (this.#isUpper ? upperOffset : -lowerOffset),
+         this.#isUpper ? upperNote : lowerNote,
          this.unmodifiedDetails.velocity * 0.75,
          -turnNoteDuration,
          turnNoteDuration
@@ -109,7 +116,7 @@ export class Turn extends ModificationBase {
          2 * turnNoteDuration
       ),
       new NoteDetails(
-         this.unmodifiedDetails.note + (this.#isUpper ? -lowerOffset : upperOffset),
+         this.#isUpper ? lowerNote : upperNote,
          this.unmodifiedDetails.velocity * 0.75,
          -turnNoteDuration,
          3 * turnNoteDuration

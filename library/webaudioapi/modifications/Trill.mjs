@@ -77,12 +77,18 @@ export class Trill extends ModificationBase {
     * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
     */
    getModifiedNoteDetails(details) {
-      if (!details || !('offset' in details))
-         details = { offset : ((details && ('implicit' in details)) ? details.implicit :
-            (this.#isUpper ? Trill.upperOffsetsMajor[this.unmodifiedDetails.note % 12] :
-               Trill.lowerOffsetsMajor[this.unmodifiedDetails.note % 12])) };
-      if (!Number.isInteger(details.offset) || (Number(details.offset) < 1))
-         throw new WebAudioApiErrors.WebAudioValueError(`The offset value (${details.offset}) must be a positive integer representing a valid MIDI note`);
+      let trillNote = this.unmodifiedDetails.note;
+      if (details && (('offset' in details) || ('implicit' in details))) {
+         trillNote += ('offset' in details) ?
+            (this.#isUpper ? Number(details.offset) : -Number(details.offset)) :
+            (this.#isUpper ? Number(details.implicit) : -Number(details.implicit));
+      }
+      else {
+         trillNote += (this.#isUpper ? Trill.upperOffsetsMajor[trillNote % 12] : -Trill.lowerOffsetsMajor[trillNote % 12]);
+         trillNote += this.key.offsets[trillNote % 12];
+      }
+      if (!Number.isInteger(trillNote) || (Number(trillNote) < 1))
+         throw new WebAudioApiErrors.WebAudioValueError(`The offset value (${trillNote}) must be a positive integer > 0`);
       const trill = [];
       const fullNoteDuration = (this.unmodifiedDetails.duration < 0) ?
          -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
@@ -90,14 +96,14 @@ export class Trill extends ModificationBase {
       const numNotes = Math.floor(fullNoteDuration / trillNoteDuration);
       for (let i = 0; i < numNotes; ++i)
          trill.push(new NoteDetails(
-            this.unmodifiedDetails.note + ((i % 2) ? (this.#isUpper ? Number(details.offset) : -Number(details.offset)) : 0),
+            (i % 2) ? trillNote : this.unmodifiedDetails.note,
             this.unmodifiedDetails.velocity * ((i == 0) ? 1.0 : 0.75),
             -trillNoteDuration,
             i * trillNoteDuration
          ));
       if ((numNotes * trillNoteDuration) < fullNoteDuration)
          trill.push(new NoteDetails(
-            this.unmodifiedDetails.note + ((numNotes % 2) ? (this.#isUpper ? Number(details.offset) : -Number(details.offset)) : 0),
+            (numNotes % 2) ? trillNote : 0,
             this.unmodifiedDetails.velocity,
             -(fullNoteDuration - (numNotes * trillNoteDuration)),
             numNotes * trillNoteDuration

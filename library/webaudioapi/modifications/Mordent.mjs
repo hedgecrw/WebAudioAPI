@@ -78,12 +78,18 @@ export class Mordent extends ModificationBase {
     * @returns {NoteDetails[]} List of {@link NoteDetails} to replace the original note
     */
    getModifiedNoteDetails(details) {
-      if (!details || !('offset' in details))
-         details = { offset: ((details && ('implicit' in details)) ? details.implicit :
-            (this.#isUpper ? Mordent.upperOffsetsMajor[this.unmodifiedDetails.note % 12] :
-               Mordent.lowerOffsetsMajor[this.unmodifiedDetails.note % 12])) };
-      if (!Number.isInteger(details.offset) || (Number(details.offset) < 1))
-         throw new WebAudioApiErrors.WebAudioValueError(`The offset value (${details.offset}) must be a positive integer representing a valid MIDI note`);
+      let mordentNote = this.unmodifiedDetails.note;
+      if (details && (('offset' in details) || ('implicit' in details))) {
+         mordentNote += ('offset' in details) ?
+            (this.#isUpper ? Number(details.offset) : -Number(details.offset)) :
+            (this.#isUpper ? Number(details.implicit) : -Number(details.implicit));
+      }
+      else {
+         mordentNote += (this.#isUpper ? Mordent.upperOffsetsMajor[mordentNote % 12] : -Mordent.lowerOffsetsMajor[mordentNote % 12]);
+         mordentNote += this.key.offsets[mordentNote % 12];
+      }
+      if (!Number.isInteger(mordentNote) || (Number(mordentNote) < 1))
+         throw new WebAudioApiErrors.WebAudioValueError(`The offset value (${mordentNote}) must be a positive integer > 0`);
       const mordentNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
       const primaryNoteDuration = ((this.unmodifiedDetails.duration < 0) ?
          -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute))) -
@@ -95,7 +101,7 @@ export class Mordent extends ModificationBase {
          0.0
       ),
       new NoteDetails(
-         this.unmodifiedDetails.note + (this.#isUpper ? Number(details.offset) : -Number(details.offset)),
+         mordentNote,
          this.unmodifiedDetails.velocity,
          -mordentNoteDuration,
          mordentNoteDuration

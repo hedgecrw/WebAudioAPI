@@ -5,6 +5,7 @@ async function minuetInG() {
    // TODO: Apply a light reverb
 
    // Treble line
+   AudioAPI.updateKeySignature(Keys.GMajor);
    AudioAPI.updateTempo(4, 160, 3, 4);
    let startTime = 0.2 + AudioAPI.getCurrentTime();
    const trebleNotes = [
@@ -117,6 +118,7 @@ async function minuetInG() {
 }
 
 async function generateMelody(modificationType) {
+   AudioAPI.updateKeySignature(Keys.CMajor);
    let startTime = 0.2 + AudioAPI.getCurrentTime(), value = null;
    switch (modificationType) {
       case Mods.Accent:           // Intentional fallthrough
@@ -130,14 +132,15 @@ async function generateMelody(modificationType) {
             startTime += await AudioAPI.playNote('defaultTrack', 67, startTime, Durations.Eighth, (i == 0 || i == 3 || i == 6 || i == 8 || i == 11 || i == 14) ? AudioAPI.getModification(modificationType) : []);
          break;
       case Mods.Slur:
+         AudioAPI.updateKeySignature(Keys.DMajor);
          AudioAPI.updateTempo(4, 70, 4, 4);
          startTime += await AudioAPI.playNote('defaultTrack', 0, startTime, Durations.Eighth, { type: Mods.Pianississimo });
-         startTime += await AudioAPI.playSequence('defaultTrack', [[69, Durations.Eighth], [71, Durations.Eighth], [73, Durations.Eighth],
+         startTime += await AudioAPI.playSequence('defaultTrack', [[69, Durations.Eighth], [71, Durations.Eighth], [72, Durations.Eighth],
                                                                    [71, Durations.Eighth], [69, Durations.Eighth], [71, Durations.DottedEighth],
-                                                                   [68, Durations.Sixteenth], [66, Durations.Half]], startTime, AudioAPI.getModification(modificationType));
+                                                                   [68, Durations.Sixteenth], [65, Durations.Half]], startTime, AudioAPI.getModification(modificationType));
          startTime += await AudioAPI.playNote('defaultTrack', 0, startTime, Durations.Eighth);
-         startTime += await AudioAPI.playSequence('defaultTrack', [[71, Durations.Eighth], [73, Durations.Eighth], [74, Durations.Eighth],
-                                                                   [73, Durations.Eighth], [71, Durations.Eighth], [73, Durations.DottedEighth],
+         startTime += await AudioAPI.playSequence('defaultTrack', [[71, Durations.Eighth], [72, Durations.Eighth], [74, Durations.Eighth],
+                                                                   [72, Durations.Eighth], [71, Durations.Eighth], [72, Durations.DottedEighth],
                                                                    [69, Durations.Sixteenth], [68, Durations.Quarter]], startTime, AudioAPI.getModification(modificationType));
          startTime += await AudioAPI.playSequence('defaultTrack', [[69, Durations.Quarter], [71, Durations.Quarter]], startTime);
          break;
@@ -150,6 +153,7 @@ async function generateMelody(modificationType) {
       case Mods.Crescendo:         // Intentional fallthrough
       case Mods.Decrescendo:       // Intentional fallthrough
       case Mods.Diminuendo:
+         AudioAPI.updateKeySignature(1);
          AudioAPI.updateTempo(4, 120, 3, 4);
          value = (modificationType == Mods.Crescendo) ? Mods.Fortissimo : Mods.Pianississimo;
          startTime += await AudioAPI.playNote('defaultTrack', 74, startTime, Durations.Quarter, AudioAPI.getModification(Mods.Fortissimo));
@@ -175,10 +179,11 @@ async function generateMelody(modificationType) {
                                                                    [71, Durations.Quarter], [69, Durations.Quarter]], startTime);
          break;
       case Mods.Tie:
+         AudioAPI.updateKeySignature(-2);
          AudioAPI.updateTempo(4, 200, 4, 4);
-         startTime += await AudioAPI.playSequence('defaultTrack', [[63, Durations.Quarter], [65, Durations.Quarter], [67, Durations.Quarter],
-                                                                   [63, Durations.Quarter, AudioAPI.getModification(modificationType)],
-                                                                   [63, Durations.Quarter], [65, Durations.Quarter], [67, Durations.Quarter], [63, Durations.Quarter]], startTime);
+         startTime += await AudioAPI.playSequence('defaultTrack', [[64, Durations.Quarter], [65, Durations.Quarter], [67, Durations.Quarter],
+                                                                   [64, Durations.Quarter, AudioAPI.getModification(modificationType)],
+                                                                   [64, Durations.Quarter], [65, Durations.Quarter], [67, Durations.Quarter], [64, Durations.Quarter]], startTime);
          break;
       case Mods.OctaveShiftUp:       // Intentional fallthrough
       case Mods.OctaveShiftDown:
@@ -189,6 +194,7 @@ async function generateMelody(modificationType) {
                                                                    [67, Durations.Quarter], [67, Durations.Half]], startTime, AudioAPI.getModification(modificationType));
          break;
       case Mods.Velocity:
+         AudioAPI.updateKeySignature(2);
          AudioAPI.updateTempo(4, 100, 4, 4);
          for (const val of [37, 67, 47, 52, 67, 67, 77, 47])
             startTime += await AudioAPI.playNote('defaultTrack', val, startTime, Durations.Eighth, AudioAPI.getModification(modificationType, Math.random()));
@@ -202,12 +208,13 @@ async function generateMelody(modificationType) {
       case Mods.Pianississimo:     // Intentional fallthrough
       case Mods.Fortississimo:     // Intentional fallthrough
       case Mods.Fermata:
+         AudioAPI.updateKeySignature(-3);
          AudioAPI.updateTempo(4, 200, 2, 4);
          value = ((modificationType == Mods.Pianississimo) || (modificationType == Mods.Pianissimo) ||
                   (modificationType == Mods.Piano) || (modificationType== Mods.MezzoPiano)) ? Mods.Fortississimo : Mods.Pianississimo;
          startTime += await AudioAPI.playSequence('defaultTrack', [[0, Durations.Eighth, AudioAPI.getModification(value)],
                                                                    [67, Durations.Eighth], [67, Durations.Eighth], [67, Durations.Eighth],
-                                                                   [63, Durations.Half, (modificationType == Mods.Fermata) ? AudioAPI.getModification(modificationType) : []]], startTime);
+                                                                   [64, Durations.Half, (modificationType == Mods.Fermata) ? AudioAPI.getModification(modificationType) : []]], startTime);
          startTime += await AudioAPI.playSequence('defaultTrack', [[0, Durations.Eighth, (modificationType == Mods.Fermata) ? [] : AudioAPI.getModification(modificationType)],
                                                                    [65, Durations.Eighth], [65, Durations.Eighth], [65, Durations.Eighth],
                                                                    [62, Durations.Half, (modificationType == Mods.Fermata) ? AudioAPI.getModification(modificationType) : []]], startTime);
@@ -226,6 +233,7 @@ async function generateMelody(modificationType) {
       case Mods.Quintuplet:
       case Mods.Sextuplet:
       case Mods.Septuplet:
+         AudioAPI.updateTempo(4, 100, 4, 4);
          startTime += await AudioAPI.playNote('defaultTrack', 72, startTime, Durations.Quarter);
          for (const note of [72, 74, 76])
             startTime += await AudioAPI.playNote('defaultTrack', note, startTime, Durations.Eighth, AudioAPI.getModification(modificationType));
@@ -233,6 +241,17 @@ async function generateMelody(modificationType) {
          for (const note of [65, 64, 62, 64, 65, 67, 69])
             startTime += await AudioAPI.playNote('defaultTrack', note, startTime, Durations.Sixteenth, AudioAPI.getModification(modificationType));
          startTime += await AudioAPI.playSequence('defaultTrack', [[71, Durations.Quarter], [72, Durations.Quarter]], startTime);
+         break;
+      case Mods.Natural:
+         AudioAPI.updateKeySignature(-3);
+         AudioAPI.updateTempo(4, 100, 4, 4);
+         startTime += await AudioAPI.playSequence('defaultTrack', [[60, Durations.Quarter], [60, Durations.Quarter], [67, Durations.Quarter],
+                                                                   [67, Durations.Quarter], [69, Durations.Quarter, AudioAPI.getModification(modificationType)],
+                                                                   [69, Durations.Quarter, AudioAPI.getModification(modificationType)],
+                                                                   [67, Durations.Half], [65, Durations.Quarter], [65, Durations.Quarter],
+                                                                   [64, Durations.Quarter, AudioAPI.getModification(modificationType)],
+                                                                   [64, Durations.Quarter, AudioAPI.getModification(modificationType)],
+                                                                   [62, Durations.Quarter], [62, Durations.Quarter], [60, Durations.Half]], startTime);
          break;
       case 99999:
          startTime += await minuetInG();
@@ -277,6 +296,7 @@ window.onload = async function() {
    window.playing = false;
    window.AudioAPI = new WebAudioAPI();
    window.Notes = AudioAPI.getAvailableNotes();
+   window.Keys = AudioAPI.getAvailableKeySignatures();
    window.Durations = AudioAPI.getAvailableNoteDurations();
    window.Mods = AudioAPI.getAvailableNoteModifications();
    for (const modification in Mods)

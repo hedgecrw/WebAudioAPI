@@ -160,6 +160,22 @@ export class WebAudioAPI {
    }
 
    /**
+    * Returns a full listing of recognized key signatures by the {@link WebAudioAPI} library.
+    * 
+    * This function can be used to enumerate available key signatures for displaying on a web page.
+    * Note, however, that the `keySignature` parameter passed to the
+    * {@link WebAudioAPI#updateKeySignature updateKeySignature()} function must be the location of
+    * the desired key on the circle of fifths associated with a certain
+    * {@link module:Constants.KeySignature KeySignature}, not a string-based key signature.
+    * 
+    * @returns {Object<string, number>} Listing of recognized key signatures by the {@link WebAudioAPI} library
+    * @see {@link module:Constants.KeySignature KeySignature}
+    */
+   getAvailableKeySignatures() {
+      return KeySignature;
+   }
+
+   /**
     * Returns a full listing of recognized musical notes by the {@link WebAudioAPI} library.
     * 
     * This function can be used to enumerate available note options for displaying on a web page.
@@ -633,8 +649,9 @@ export class WebAudioAPI {
     * Updates the global key signature parameters for all audio tracks.
     * 
     * The `keySignature` parameter should correspond to the location of the desired key on the
-    * circle of fifths as returned by the {@link module:Constants.KeySignature KeySignature}
-    * constant values.
+    * circle of fifths as returned by the {@link WebAudioAPI#getAvailableKeySignatures getAvailableKeySignatures()}
+    * function. Alternately, you can specify the number of sharps as a positive value or the
+    * number of flats as a negative value.
     * 
     * @param {number} keySignature - Numerical {@link module:Constants.KeySignature KeySignature} indicator based on its circle of fifths position
     */
@@ -979,7 +996,8 @@ export class WebAudioAPI {
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       else
          checkModifications(mods, true);
-      return await this.#tracks[trackName].playNote(Number(note), Number(startTime), Number(duration), mods);
+      const noteInKey = note ? (Number(note) + this.#key.offsets[Number(note) % 12]) : 0;
+      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods);
    }
 
    /**
@@ -1014,6 +1032,8 @@ export class WebAudioAPI {
          throw new WebAudioApiErrors.WebAudioValueError('The "chord" parameter must be an array of tuples');
       else
          checkModifications(mods, true);
+      for (const chordItem of chord)
+         chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
       return await this.#tracks[trackName].playChord(chord, Number(startTime), mods);
    }
 
@@ -1050,6 +1070,14 @@ export class WebAudioAPI {
          throw new WebAudioApiErrors.WebAudioValueError('The "sequence" parameter must be either an array of tuples or an array of an array of tuples');
       else
          checkModifications(mods, false);
+      for (const sequenceItem of sequence) {
+         if (Array.isArray(sequenceItem[0])) {
+            for (const chordItem of sequenceItem[0])
+               chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
+         }
+         else
+            sequenceItem[0] = sequenceItem[0] ? (Number(sequenceItem[0]) + this.#key.offsets[Number(sequenceItem[0]) % 12]) : 0;
+      }
       return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods);
    }
 

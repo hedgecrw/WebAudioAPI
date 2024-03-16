@@ -119,7 +119,7 @@ export const ModificationType = {
    TrillUpper: 40, TrillLower: 41, MordentUpper: 42, MordentLower: 43,              // Implicit ornamentations (adds notes)
    TurnUpper: 44, TurnLower: 45, Glissando: 46,
    GraceAcciaccatura: 60, GraceAppoggiatura: 61,                                    // Explicit ornamentations (alters single note)
-   Tie: 80, OctaveShiftUp: 81, OctaveShiftDown: 82,                                 // Miscellaneous modifications
+   Tie: 80, OctaveShiftUp: 81, OctaveShiftDown: 82, Natural: 83,                    // Miscellaneous modifications
    Velocity: 100, Piano: 101, Forte: 102, MezzoPiano: 103, MezzoForte: 104,         // Loudness modifications
    Pianissimo: 105, Fortissimo: 106, Pianississimo: 107, Fortississimo: 108,
    Tuplet: 120, Triplet: 121, Quintuplet: 122, Sextuplet: 123,                      // Duration modifications

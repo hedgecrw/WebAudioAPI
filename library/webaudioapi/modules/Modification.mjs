@@ -12,6 +12,7 @@ import { GlobalDynamic } from '../modifications/GlobalDynamic.mjs';
 import { Grace } from '../modifications/Grace.mjs';
 import { Marcato } from '../modifications/Marcato.mjs';
 import { Mordent } from '../modifications/Mordent.mjs';
+import { Natural } from '../modifications/Natural.mjs';
 import { OctaveShift } from '../modifications/OctaveShift.mjs';
 import { Portamento } from '../modifications/Portamento.mjs';
 import { Sforzando } from '../modifications/Sforzando.mjs';
@@ -51,6 +52,7 @@ const ModificationClasses = {
    [ModificationType.GraceAppoggiatura]: [Grace, Grace.bind(null, true)],
    [ModificationType.Tie]: [Tie, Tie],
    [ModificationType.Velocity]: [Velocity, Velocity],
+   [ModificationType.Natural]: [Natural, Natural],
    [ModificationType.Piano]: [GlobalDynamic, GlobalDynamic.bind(null, -1)],
    [ModificationType.MezzoPiano]: [GlobalDynamic, GlobalDynamic.bind(null, -0.5)],
    [ModificationType.OctaveShiftUp]: [OctaveShift, OctaveShift.bind(null, true)],
@@ -83,7 +85,7 @@ export function canModifySequence(modificationType) {
 }
 
 /**
- * Returns a list of modulation-specific parameters for use in the corresponding
+ * Returns a list of modification-specific parameters for use with the corresponding
  * {@link module:Constants.ModificationType ModificationType}.
  * 
  * Note that the `modificationType` parameter must be the **numeric value** associated

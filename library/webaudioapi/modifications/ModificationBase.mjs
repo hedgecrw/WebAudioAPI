@@ -1,5 +1,19 @@
 /** Class representing a set of details for playing an individual note */
 export class NoteDetails {
+
+   /** @type {number} */
+   note;
+   /** @type {number} */
+   velocity;
+   /** @type {number} */
+   duration;
+   /** @type {number} */
+   startTimeOffset;
+   /** @type {number} */
+   usedDuration;
+   /** @type {boolean} */
+   wasWaitingNote;
+
    constructor(note, velocity, duration, startTimeOffset, usedDuration) {
       this.note = note;
       this.velocity = velocity;

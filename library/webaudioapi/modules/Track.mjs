@@ -10,7 +10,7 @@
  */
 
 import { canModifySequence, getModificationParameters, inferModificationParametersFromSequence,
-         loadModification, NoteDetails, GlobalDynamic } from './Modification.mjs';
+   loadModification, NoteDetails, GlobalDynamic } from './Modification.mjs';
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
 import { EncodingType, AnalysisType, ModificationType } from './Constants.mjs';
 import * as WebAudioApiErrors from './Errors.mjs';

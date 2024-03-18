@@ -1072,7 +1072,7 @@ export class WebAudioAPI {
          checkModifications(mods, false);
       for (const sequenceItem of sequence) {
          if (Array.isArray(sequenceItem[0])) {
-            for (const chordItem of sequenceItem[0])
+            for (const chordItem of sequenceItem)
                chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
          }
          else

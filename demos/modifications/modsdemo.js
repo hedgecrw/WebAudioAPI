@@ -2,18 +2,69 @@ async function minuetInG() {
    // Create a bass line track with a grand piano
    AudioAPI.createTrack('bassTrack');
    await AudioAPI.updateInstrument('bassTrack', 'Grand Piano');
-   // TODO: Apply a light reverb
 
-   // Treble line
+   // Set up the global context of the piece
+   const originalStartTime = 0.2 + AudioAPI.getCurrentTime();
    AudioAPI.updateKeySignature(Keys.GMajor);
    AudioAPI.updateTempo(4, 160, 3, 4);
-   const trebleNotes = [];
+   // TODO: Apply a light reverb
 
-   // Bass line
-   const bassNotes = [];
-   const startTime = 0.2 + AudioAPI.getCurrentTime();
-   await AudioAPI.playSequence('defaultTrack', trebleNotes, startTime);
-   return await AudioAPI.playSequence('bassTrack', bassNotes, startTime);
+   // Schedule the treble line
+   let startTime = originalStartTime;
+   startTime += await AudioAPI.playNote('defaultTrack', Notes.D5, startTime, Durations.Quarter, AudioAPI.getModification(Mods.Forte));
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.G4, Durations.Eighth, AudioAPI.getModification(Mods.Piano)],
+                                                             [Notes.A4, Durations.Eighth], [Notes.B4, Durations.Eighth], [Notes.C5, Durations.Eighth],
+                                                             [Notes.D5, Durations.Quarter, [AudioAPI.getModification(Mods.Forte), AudioAPI.getModification(Mods.Staccato)]]], startTime);
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)],
+                                                             [Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)]], startTime);
+   startTime += await AudioAPI.playNote('defaultTrack', Notes.E5, startTime, Durations.Quarter, AudioAPI.getModification(Mods.Forte));
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.C5, Durations.Eighth, [AudioAPI.getModification(Mods.Piano), AudioAPI.getModification(Mods.MordentLower)]],
+                                                             [Notes.D5, Durations.Eighth], [Notes.E5, Durations.Eighth], [Notes.F5, Durations.Eighth],
+                                                             [Notes.G5, Durations.Quarter, [AudioAPI.getModification(Mods.Forte), AudioAPI.getModification(Mods.Staccato)]]], startTime);
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)],
+                                                            [Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)]], startTime);
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.C5, Durations.Quarter, AudioAPI.getModification(Mods.MordentLower)],
+                                                             [Notes.D5, Durations.Eighth], [Notes.C5, Durations.Eighth], [Notes.B4, Durations.Eighth], [Notes.A4, Durations.Eighth],
+                                                             [Notes.B4, Durations.Quarter], [Notes.C5, Durations.Eighth], [Notes.B4, Durations.Eighth], [Notes.A4, Durations.Eighth],
+                                                             [Notes.G4, Durations.Eighth], [Notes.F4, Durations.Quarter], [Notes.G4, Durations.Eighth], [Notes.A4, Durations.Eighth],
+                                                             [Notes.B4, Durations.Eighth], [Notes.G4, Durations.Eighth],
+                                                             [Notes.A4, Durations.DottedHalf, AudioAPI.getModification(Mods.GraceAcciaccatura, Notes.B4)]], startTime);
+
+   startTime += await AudioAPI.playNote('defaultTrack', Notes.D5, startTime, Durations.Quarter, AudioAPI.getModification(Mods.Forte));
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.G4, Durations.Eighth, AudioAPI.getModification(Mods.Piano)],
+                                                             [Notes.A4, Durations.Eighth], [Notes.B4, Durations.Eighth], [Notes.C5, Durations.Eighth],
+                                                             [Notes.D5, Durations.Quarter, [AudioAPI.getModification(Mods.Forte), AudioAPI.getModification(Mods.Staccato)]]], startTime);
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)],
+                                                             [Notes.G4, Durations.Quarter, [AudioAPI.getModification(Mods.Staccato), AudioAPI.getModification(Mods.Glissando)]]], startTime);
+   startTime += await AudioAPI.playNote('defaultTrack', Notes.E5, startTime, Durations.Quarter, AudioAPI.getModification(Mods.Forte));
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.C5, Durations.Eighth, [AudioAPI.getModification(Mods.Piano), AudioAPI.getModification(Mods.MordentLower)]],
+                                                             [Notes.D5, Durations.Eighth], [Notes.E5, Durations.Eighth], [Notes.F5, Durations.Eighth],
+                                                             [Notes.G5, Durations.Quarter, [AudioAPI.getModification(Mods.Forte), AudioAPI.getModification(Mods.Staccato)]]], startTime);
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)],
+                                                            [Notes.G4, Durations.Quarter, AudioAPI.getModification(Mods.Staccato)]], startTime);
+   startTime += await AudioAPI.playSequence('defaultTrack', [[Notes.C5, Durations.Quarter, AudioAPI.getModification(Mods.MordentLower)],
+                                                             [Notes.D5, Durations.Eighth], [Notes.C5, Durations.Eighth], [Notes.B4, Durations.Eighth], [Notes.A4, Durations.Eighth],
+                                                             [Notes.B4, Durations.Quarter], [Notes.C5, Durations.Eighth], [Notes.B4, Durations.Eighth], [Notes.A4, Durations.Eighth],
+                                                             [Notes.G4, Durations.Eighth], [Notes.A4, Durations.Quarter], [Notes.B4, Durations.Eighth], [Notes.A4, Durations.Eighth],
+                                                             [Notes.G4, Durations.Eighth], [Notes.F4, Durations.Eighth],
+                                                             [Notes.G4, Durations.DottedHalf, AudioAPI.getModification(Mods.TurnUpper)]], startTime, AudioAPI.getModification(Mods.Slur));
+
+   // Schedule the bass line
+   startTime = originalStartTime;
+   startTime += await AudioAPI.playSequence('bassTrack', [[[Notes.G3, Durations.Half, AudioAPI.getModification(Mods.Forte)], [Notes.B3, Durations.Half], [Notes.D4, Durations.Half]],
+                                                          [Notes.A3, Durations.Quarter], [Notes.B3, Durations.DottedHalf], [Notes.C4, Durations.DottedHalf],
+                                                          [Notes.B3, Durations.DottedHalf], [Notes.A3, Durations.DottedHalf], [Notes.G3, Durations.DottedHalf],
+                                                          [Notes.D4, Durations.Quarter], [Notes.B3, Durations.Quarter], [Notes.G3, Durations.Quarter],
+                                                          [Notes.D4, Durations.Quarter], [Notes.D3, Durations.Eighth], [Notes.C4, Durations.Eighth],
+                                                          [Notes.B3, Durations.Eighth], [Notes.A3, Durations.Eighth], [Notes.B3, Durations.Half],
+                                                          [Notes.A3, Durations.Quarter], [Notes.G3, Durations.Quarter], [Notes.B3, Durations.Quarter],
+                                                          [Notes.G3, Durations.Quarter], [Notes.C4, Durations.DottedHalf], [Notes.B3, Durations.Quarter],
+                                                          [Notes.C4, Durations.Eighth], [Notes.B3, Durations.Eighth], [Notes.A3, Durations.Eighth],
+                                                          [Notes.G3, Durations.Eighth], [Notes.A3, Durations.Half], [Notes.F3, Durations.Quarter],
+                                                          [Notes.G3, Durations.Half], [Notes.B3, Durations.Quarter], [Notes.C4, Durations.Quarter],
+                                                          [Notes.D4, Durations.Quarter], [Notes.D3, Durations.Quarter], [Notes.G3, Durations.Half],
+                                                          [Notes.G2, Durations.Quarter, AudioAPI.getModification(Mods.Fermata)]], startTime);
+   return startTime;
 }
 
 async function generateMelody(modificationType) {

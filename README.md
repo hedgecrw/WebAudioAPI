@@ -25,6 +25,7 @@ Javascript library to generate music using the Web Audio API
 
 ## Future Work
 
+ - [ ] Allow for nested sequences (function to generate sequences with mods)
  - [ ] Fix sustained/looping instrument audio clips to have no silence at end
  - [ ] Allow importing Sf2, Sf3, Sfz, or raw audio (WAV, OGG, MP3, etc.) formats for instrument creation
  - [ ] Import good quality SoundFonts from https://sites.google.com/site/soundfonts4u/

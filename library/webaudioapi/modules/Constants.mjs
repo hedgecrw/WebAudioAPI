@@ -114,16 +114,16 @@ export const EffectType = {
  * @constant {Object<string, number>}
  */
 export const ModificationType = {
-   Accent: 1, Marcato: 2, Staccato: 3, Staccatissimo: 4, Tenuto: 5, Sforzando: 6,   // Single-note articulations
-   Slur: 20, Portamento: 21, Crescendo: 22, Decrescendo: 23, Diminuendo: 24,        // Multi-note articulations
-   TrillUpper: 40, TrillLower: 41, MordentUpper: 42, MordentLower: 43,              // Implicit ornamentations (adds notes)
-   TurnUpper: 44, TurnLower: 45, Glissando: 46,
-   GraceAcciaccatura: 60, GraceAppoggiatura: 61,                                    // Explicit ornamentations (alters single note)
-   Tie: 80, OctaveShiftUp: 81, OctaveShiftDown: 82, Natural: 83,                    // Miscellaneous modifications
-   Velocity: 100, Piano: 101, Forte: 102, MezzoPiano: 103, MezzoForte: 104,         // Loudness modifications
-   Pianissimo: 105, Fortissimo: 106, Pianississimo: 107, Fortississimo: 108,
-   Tuplet: 120, Triplet: 121, Quintuplet: 122, Sextuplet: 123,                      // Duration modifications
-   Septuplet: 124, Fermata: 125
+   Velocity: 1, Piano: 2, Forte: 3, MezzoPiano: 4, MezzoForte: 5,                         // Loudness modifications
+   Pianissimo: 6, Fortissimo: 7, Pianississimo: 8, Fortississimo: 9,
+   Slur: 20, Crescendo: 21, Decrescendo: 22, Diminuendo: 23,                              // Multi-note articulations
+   Accent: 40, Marcato: 41, Staccato: 42, Staccatissimo: 43, Tenuto: 44, Sforzando: 45,   // Single-note articulations
+   Tie: 60, OctaveShiftUp: 61, OctaveShiftDown: 62, Natural: 63,                          // Miscellaneous modifications
+   GraceAcciaccatura: 80, GraceAppoggiatura: 81,                                          // Explicit ornamentations (alters single note)
+   Tuplet: 100, Triplet: 101, Quintuplet: 102, Sextuplet: 103,                            // Duration modifications
+   Septuplet: 104, Fermata: 105,
+   TrillUpper: 120, TrillLower: 121, MordentUpper: 122, MordentLower: 123,                // Implicit ornamentations (adds notes)
+   TurnUpper: 124, TurnLower: 125, Glissando: 126, Portamento: 127
 };
 
 /**

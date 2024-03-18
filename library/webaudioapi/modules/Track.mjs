@@ -35,8 +35,8 @@ import { loadEffect } from './Effect.mjs';
 export function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
 
    // Track-local variable definitions
-   let currentVelocity = 0.5, chordIndex = 0;
    let instrument = null, midiDevice = null, audioDeviceInput = null;
+   let currentVelocity = 0.5, chordIndex = 0, chordDynamicUpdated = false;
    const audioSources = [], asyncAudioSources = [], effects = [], notesInWaiting = {}, waitingTies = [];
    const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
    const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
@@ -264,7 +264,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * @param {number} note - MIDI {@link module:Constants.Note Note} number to be played
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
-    * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
+    * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
     * @param {boolean} [fromChord=false] - Whether this note is being played from the {@link playChord playChord()} function
     * @returns {number} Duration (in seconds) of the note being played
     * @memberof Track
@@ -298,9 +298,16 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
          }
       }
 
-      // TODO: Step 1, remove duplicates (keep last duplicate)
-      // TODO: Order by type (re-order types so that they make sense when applied), 1. GlobalDynamic, 2. Velocity changes (gradual then accents), 3. Start Time Offsets, 4. Duration changes, 5. Add notes
-      // TODO: Ensure no modification velocity is cumulative (if played in a chord, it would accumulate)
+      // Remove any duplicate modifications, keeping only the last one
+      const exists = [];
+      for (let i = modifications.length - 1; i >= 0; --i)
+         if (modifications[i].type in exists)
+            modifications.splice(i, 1);
+         else
+            exists.push(modifications[i].type);
+
+      // Order modifications by type so that they make sense when applied: GlobalDynamic < Loudness < Start Time Offsets < Durations < Adds notes
+      modifications.sort((a, b) => { return a.type - b.type; });
 
       // Get concrete note details based on any applied modifications
       let requiresWaiting = false, totalDurationSeconds = 0.0;
@@ -324,14 +331,17 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
          if (!modRequiresWaiting) {
             const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
             noteDetails = modClass.getModifiedNoteDetails(modification.value);
-            if ((modification.type == ModificationType.Crescendo) || (modification.type == ModificationType.Decrescendo) ||
-               (modification.type == ModificationType.Diminuendo) || (modClass instanceof GlobalDynamic))
+            if (((modification.type == ModificationType.Crescendo) || (modification.type == ModificationType.Decrescendo) ||
+                 (modification.type == ModificationType.Diminuendo) || (modClass instanceof GlobalDynamic)) &&
+                (!fromChord || !chordDynamicUpdated)) {
                currentVelocity = noteDetails[0].velocity;
+               chordDynamicUpdated = fromChord;
+            }
             else if (modification.type == ModificationType.Tie)
                newTies.push(noteDetails[0].note);
          }
          else
-            totalDurationSeconds = (noteDetails[0].duration < 0) ? -noteDetails[0].duration : (60.0 / ((noteDetails[0].duration / tempo.beatBase) * tempo.beatsPerMinute));
+            totalDurationSeconds = (noteDetails[0].usedDuration < 0) ? -noteDetails[0].usedDuration : (60.0 / ((noteDetails[0].usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
       }
 
       // Schedule all notes for playback
@@ -372,7 +382,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * 
     * @param {Array<Array>}} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
     * @param {number} startTime - Global API time at which to start playing the chord
-    * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the chord
+    * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the chord
     * @returns {number} Duration (in seconds) of the chord being played
     * @memberof Track
     * @instance
@@ -385,6 +395,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
          const mods = modifications.concat(noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []);
          minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, true));
       }
+      chordDynamicUpdated = false;
       return minDuration;
    }
 
@@ -404,7 +415,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * 
     * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
     * @param {number} startTime - Global API time at which to start playing the sequence
-    * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the sequence
+    * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the sequence
     * @returns {number} Duration (in seconds) of the sequence being played
     * @memberof Track
     * @instance

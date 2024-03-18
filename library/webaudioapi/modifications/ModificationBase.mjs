@@ -6,6 +6,7 @@ export class NoteDetails {
       this.duration = duration;
       this.startTimeOffset = (startTimeOffset === undefined) ? 0.0 : startTimeOffset;
       this.usedDuration = (usedDuration === undefined) ? duration : usedDuration;
+      this.wasWaitingNote = false;
    }
 }
 

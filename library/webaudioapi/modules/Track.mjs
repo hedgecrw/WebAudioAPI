@@ -9,8 +9,9 @@
  * @global
  */
 
+import { canModifySequence, getModificationParameters, inferModificationParametersFromSequence,
+         loadModification, NoteDetails, GlobalDynamic } from './Modification.mjs';
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
-import { loadModification, inferModificationParametersFromSequence, NoteDetails, GlobalDynamic } from './Modification.mjs';
 import { EncodingType, AnalysisType, ModificationType } from './Constants.mjs';
 import * as WebAudioApiErrors from './Errors.mjs';
 import { getEncoderFor } from './Encoder.mjs';
@@ -34,8 +35,9 @@ import { loadEffect } from './Effect.mjs';
 export function createTrack(name, audioContext, tempo, keySignature, trackAudioSink) {
 
    // Track-local variable definitions
-   let instrument = null, midiDevice = null, audioDeviceInput = null, currentVelocity = 0.5;
-   const audioSources = [], asyncAudioSources = [], effects = [];
+   let currentVelocity = 0.5, chordIndex = 0;
+   let instrument = null, midiDevice = null, audioDeviceInput = null;
+   const audioSources = [], asyncAudioSources = [], effects = [], notesInWaiting = {}, waitingTies = [];
    const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
    const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
    audioSink.connect(trackAudioSink);
@@ -263,35 +265,94 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
     * @param {ModificationDetails|ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
+    * @param {boolean} [fromChord=false] - Whether this note is being played from the {@link playChord playChord()} function
     * @returns {number} Duration (in seconds) of the note being played
     * @memberof Track
     * @instance
     */
-   function playNote(note, startTime, duration, modifications) {
+   function playNote(note, startTime, duration, modifications, fromChord=false) {
       if (!instrument)
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
+
+      // Infer missing modification details for any notes in waiting
+      const waitingNoteDetails = [], newTies = [];
+      for (const noteInWaitingPitch in notesInWaiting) {
+         const noteInWaiting = notesInWaiting[noteInWaitingPitch];
+         if (!fromChord || (noteInWaiting.chordIndex != chordIndex)) {
+            let noteDetails = [new NoteDetails(noteInWaiting.note, currentVelocity, noteInWaiting.duration)];
+            const sequence = [[noteInWaiting.note, noteInWaiting.duration], [note, duration]];
+            for (const modification of noteInWaiting.pendingModifications)
+               modification.value = inferModificationParametersFromSequence(modification.type, sequence, 1, modification.value);
+            for (const modification of noteInWaiting.modifications) {
+               const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
+               noteDetails = modClass.getModifiedNoteDetails(modification.value);
+               if (modification.type == ModificationType.Tie)
+                  newTies.push(noteDetails[0].note);
+               for (const noteDetail of noteDetails) {
+                  noteDetail.startTimeOffset -= (startTime - noteInWaiting.startTime);
+                  noteDetail.wasWaitingNote = true;
+               }
+            }
+            delete notesInWaiting[noteInWaitingPitch];
+            waitingNoteDetails.push(...noteDetails);
+         }
+      }
+
       // TODO: Step 1, remove duplicates (keep last duplicate)
       // TODO: Order by type (re-order types so that they make sense when applied), 1. GlobalDynamic, 2. Velocity changes (gradual then accents), 3. Start Time Offsets, 4. Duration changes, 5. Add notes
       // TODO: Ensure no modification velocity is cumulative (if played in a chord, it would accumulate)
-      let totalDurationSeconds = 0.0;
+
+      // Get concrete note details based on any applied modifications
+      let requiresWaiting = false, totalDurationSeconds = 0.0;
       let noteDetails = [new NoteDetails(note, currentVelocity, duration)];
       for (const modification of modifications) {
-         const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
-         noteDetails = modClass.getModifiedNoteDetails(modification.value);
-         if ((modification.type == ModificationType.Crescendo) || (modification.type == ModificationType.Decrescendo) ||
-             (modification.type == ModificationType.Diminuendo) || (modClass instanceof GlobalDynamic))
-            currentVelocity = noteDetails[0].velocity;
+
+         // Determine if the modification requires that we wait for the next note to infer missing details
+         let modRequiresWaiting = false;
+         const neededParams = getModificationParameters(modification.type).optional.singleNote;
+         if (neededParams.length && canModifySequence(modification.type)) {
+            for (const neededParam of neededParams)
+               if (!('value' in modification) || !(neededParam in modification.value) && ((neededParams.length > 1) || !('implicit' in modification.value))) {
+                  if (!(note in notesInWaiting))
+                     notesInWaiting[note] = { note: note, duration: duration, startTime: startTime, chordIndex: chordIndex, modifications: modifications, pendingModifications: [] };
+                  notesInWaiting[note].pendingModifications.push(modification);
+                  requiresWaiting = modRequiresWaiting = true;
+               }
+         }
+
+         // Update the concrete note details based on the current modification
+         if (!modRequiresWaiting) {
+            const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
+            noteDetails = modClass.getModifiedNoteDetails(modification.value);
+            if ((modification.type == ModificationType.Crescendo) || (modification.type == ModificationType.Decrescendo) ||
+               (modification.type == ModificationType.Diminuendo) || (modClass instanceof GlobalDynamic))
+               currentVelocity = noteDetails[0].velocity;
+            else if (modification.type == ModificationType.Tie)
+               newTies.push(noteDetails[0].note);
+         }
+         else
+            totalDurationSeconds = (noteDetails[0].duration < 0) ? -noteDetails[0].duration : (60.0 / ((noteDetails[0].duration / tempo.beatBase) * tempo.beatsPerMinute));
       }
+
+      // Schedule all notes for playback
+      noteDetails = (requiresWaiting ? waitingNoteDetails : waitingNoteDetails.concat(noteDetails));
       for (const note of noteDetails) {
          const durationSeconds = (note.duration < 0) ? -note.duration : (60.0 / ((note.duration / tempo.beatBase) * tempo.beatsPerMinute));
-         const noteSource = instrument.getNote(note.note);
-         const noteVolume = new GainNode(audioContext, { gain: note.velocity });
-         noteSource.connect(noteVolume).connect(audioSink);
-         noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
-         noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
-         audioSources.push(noteSource);
-         noteSource.start(startTime + note.startTimeOffset, 0, durationSeconds + 0.200);
-         totalDurationSeconds += (note.usedDuration <= 0) ? -note.usedDuration : (60.0 / ((note.usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
+         if (waitingTies.includes(note.note))
+            waitingTies.splice(waitingTies.indexOf(note.note), 1);
+         else {
+            const noteSource = instrument.getNote(note.note);
+            const noteVolume = new GainNode(audioContext, { gain: note.velocity });
+            noteSource.connect(noteVolume).connect(audioSink);
+            noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
+            noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
+            audioSources.push(noteSource);
+            noteSource.start(startTime + note.startTimeOffset, 0, durationSeconds + 0.200);
+         }
+         if (newTies.includes(note.note))
+            waitingTies.push(newTies.splice(newTies.indexOf(note.note), 1)[0]);
+         if (!note.wasWaitingNote)
+            totalDurationSeconds += (note.usedDuration <= 0) ? -note.usedDuration : (60.0 / ((note.usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
       }
       return totalDurationSeconds;
    }
@@ -317,11 +378,12 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * @instance
     */
    function playChord(chord, startTime, modifications) {
+      chordIndex = (chordIndex + 1) % 2;
       let minDuration = Number.POSITIVE_INFINITY;
       for (const chordItem of chord) {
          const [note, duration, noteMods] = chordItem;
          const mods = modifications.concat(noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []);
-         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods));
+         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, true));
       }
       return minDuration;
    }

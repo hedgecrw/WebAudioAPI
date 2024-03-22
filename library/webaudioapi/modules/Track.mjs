@@ -301,7 +301,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
       // Remove any duplicate modifications, keeping only the last one
       const exists = [];
       for (let i = modifications.length - 1; i >= 0; --i)
-         if (modifications[i].type in exists)
+         if (exists.includes(modifications[i].type))
             modifications.splice(i, 1);
          else
             exists.push(modifications[i].type);

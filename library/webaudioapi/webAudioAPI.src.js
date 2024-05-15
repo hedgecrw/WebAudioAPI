@@ -443,6 +443,18 @@ export class WebAudioAPI {
    }
 
    /**
+    * Decodes an {@link ArrayBuffer} containing an audio clip into an {@link AudioBuffer} object.
+    * 
+    * @param {ArrayBuffer} audioClip - Array buffer containing the audio clip to decode
+    * @returns {AudioBuffer} Decoded audio buffer for the specified audio clip
+    */
+   async decodeAudioClip(audioClip) {
+      if (!(audioClip instanceof ArrayBuffer))
+         throw new WebAudioApiErrors.WebAudioValueError('The specified audio clip must be of type ArrayBuffer for decoding');
+      return await this.#audioContext.decodeAudioData(audioClip);
+   }
+
+   /**
     * Analyzes the current realtime audio output according to the specified `analysisType`.
     * 
     * The `trackName` parameter is optional, and if left blank, will cause the analysis to be

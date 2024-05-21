@@ -444,7 +444,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
-    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
+    * @param {ArrayBuffer|AudioBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number} [duration] -  Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
@@ -456,8 +456,9 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     */
    async function playClip(audioClip, startTime, duration) {
       let expectedDuration = null;
-      if (audioClip instanceof ArrayBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
-         const audioBuffer = await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer()));
+      if (audioClip instanceof ArrayBuffer || audioClip instanceof AudioBuffer || audioClip instanceof Blob || audioClip.clipType == 'audio') {
+         const audioBuffer = (audioClip instanceof AudioBuffer) ? audioClip :
+            (await audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : (audioClip instanceof Blob ? await audioClip.arrayBuffer() : await audioClip.getRawData().arrayBuffer())));
          const clipSource = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
          audioSources.push(clipSource);
          if (duration) {

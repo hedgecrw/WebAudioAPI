@@ -1097,14 +1097,15 @@ export class WebAudioAPI {
     * Schedules an audio clip to be played on a specific track for some duration of time.
     * 
     * The format of the audio clip in the `audioClip` parameter may be a data buffer containing
-    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, or
-    * a {@link MidiClip} or {@link AudioClip} that was recorded using this library.
+    * raw audio-encoded data (such as from a WAV file), a blob containing audio-encoded data, an
+    * already-decoded audio buffer, or a {@link MidiClip} or {@link AudioClip} that was recorded
+    * using this library.
     * 
     * If the `duration` parameter is not specified or is set to `null`, the audio clip will
     * play to completion.
     * 
     * @param {string} trackName - Name of the track on which to play the clip
-    * @param {ArrayBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
+    * @param {ArrayBuffer|AudioBuffer|Blob|MidiClip|AudioClip} audioClip - Object containing audio data to play
     * @param {number} startTime - Global API time at which to start playing the clip
     * @param {number} [duration] - Number of seconds for which to continue playing the clip
     * @returns {Promise<number>} Duration (in seconds) of the clip being played
@@ -1115,8 +1116,8 @@ export class WebAudioAPI {
    async playClip(trackName, audioClip, startTime, duration) {
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
-         throw new WebAudioApiErrors.WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, Blob, MidiClip, AudioClip) and cannot be played');
+      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof AudioBuffer || audioClip instanceof Blob || (audioClip instanceof Object && Object.prototype.hasOwnProperty.call(audioClip, 'clipType'))))
+         throw new WebAudioApiErrors.WebAudioTrackError('The audio clip is not a known type (ArrayBuffer, AudioBuffer, Blob, MidiClip, AudioClip) and cannot be played');
       return await this.#tracks[trackName].playClip(audioClip, Number(startTime), duration ? Number(duration) : undefined);
    }
 

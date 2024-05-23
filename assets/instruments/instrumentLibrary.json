@@ -8,5 +8,6 @@
     "Nylon Guitar": "/guitar/nylon_guitar.inst",
     "Harp": "/harp/harp.inst",
     "Pipe Organ": "/organ/pipe_organ.inst",
-    "Violin": "/violin/violin.inst"
+    "Violin": "/violin/violin.inst",
+    "Drum Kit": "/drums/drum_kit.inst"
 }

@@ -265,12 +265,13 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
     * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the note
-    * @param {boolean} [fromChord=false] - Whether this note is being played from the {@link playChord playChord()} function
+    * @param {boolean} isDrumNote - Whether this note is a drum note (i.e., not affected by key or duration)
+    * @param {boolean} [fromChord] - Whether this note is being played from the {@link playChord playChord()} function
     * @returns {number} Duration (in seconds) of the note being played
     * @memberof Track
     * @instance
     */
-   function playNote(note, startTime, duration, modifications, fromChord=false) {
+   function playNote(note, startTime, duration, modifications, isDrumNote, fromChord=false) {
       if (!instrument)
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
 
@@ -354,10 +355,11 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
             const noteSource = instrument.getNote(note.note);
             const noteVolume = new GainNode(audioContext, { gain: note.velocity });
             noteSource.connect(noteVolume).connect(audioSink);
-            noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
+            if (!isDrumNote)
+               noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
             noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
             audioSources.push(noteSource);
-            noteSource.start(startTime + note.startTimeOffset, 0, durationSeconds + 0.200);
+            noteSource.start(startTime + note.startTimeOffset, 0, isDrumNote ? undefined : (durationSeconds + 0.200));
          }
          if (newTies.includes(note.note))
             waitingTies.push(newTies.splice(newTies.indexOf(note.note), 1)[0]);
@@ -383,17 +385,18 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * @param {Array<Array>}} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
     * @param {number} startTime - Global API time at which to start playing the chord
     * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the chord
+    * @param {boolean} areDrumNotes - Whether this chord contains only drum notes (i.e., not affected by key or duration)
     * @returns {number} Duration (in seconds) of the chord being played
     * @memberof Track
     * @instance
     */
-   function playChord(chord, startTime, modifications) {
+   function playChord(chord, startTime, modifications, areDrumNotes) {
       chordIndex = (chordIndex + 1) % 2;
       let minDuration = Number.POSITIVE_INFINITY;
       for (const chordItem of chord) {
          const [note, duration, noteMods] = chordItem;
          const mods = modifications.concat(noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []);
-         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, true));
+         minDuration = Math.min(minDuration, playNote(Number(note), startTime, Number(duration), mods, areDrumNotes, true));
       }
       chordDynamicUpdated = false;
       return minDuration;
@@ -416,11 +419,12 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
     * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
     * @param {number} startTime - Global API time at which to start playing the sequence
     * @param {ModificationDetails[]} modifications - One or more {@link ModificationDetails Modifications} to apply to the sequence
+    * @param {boolean} areDrumNotes - Whether this sequence contains only drum notes (i.e., not affected by key or duration)
     * @returns {number} Duration (in seconds) of the sequence being played
     * @memberof Track
     * @instance
     */
-   function playSequence(sequence, startTime, modifications) {
+   function playSequence(sequence, startTime, modifications, areDrumNotes) {
       let noteIndex = 0;
       const originalStartTime = startTime;
       for (const sequenceItem of sequence) {
@@ -428,11 +432,11 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
          for (const modification of modifications)
             modification.value = inferModificationParametersFromSequence(modification.type, sequence, noteIndex, modification.value);
          if (Array.isArray(sequenceItem[0]))
-            startTime += playChord(sequenceItem, startTime, modifications);
+            startTime += playChord(sequenceItem, startTime, modifications, areDrumNotes);
          else {
             const [note, duration, noteMods] = sequenceItem;
             const mods = (noteMods ? (Array.isArray(noteMods) ? noteMods : [noteMods]) : []).concat(modifications);
-            startTime += playNote(Number(note), startTime, Number(duration), mods);
+            startTime += playNote(Number(note), startTime, Number(duration), mods, areDrumNotes);
          }
       }
       return startTime - originalStartTime;
@@ -486,13 +490,13 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
                   unmatchedNotes[note] = [ Number(noteTime), getMidiVelocity(midiData) ];
                else if ((command === MidiCommand.NoteOff) && (note in unmatchedNotes)) {
                   const noteDuration = ((!duration || (Number(noteTime) <= duration)) ? Number(noteTime) : duration) - unmatchedNotes[note][0];
-                  playNote(note, startTime + unmatchedNotes[note][0], -noteDuration, [{ type: ModificationType.Velocity, value: unmatchedNotes[note][1] }]);
+                  playNote(note, startTime + unmatchedNotes[note][0], -noteDuration, [{ type: ModificationType.Velocity, value: unmatchedNotes[note][1] }], false);
                   delete unmatchedNotes[note];
                }
             }
          for (const [note, noteData] of Object.entries(unmatchedNotes)) {
             const noteDuration = audioClip.getDuration() - noteData[0];
-            playNote(note, startTime + noteData[0], -noteDuration, [{ type: ModificationType.Velocity, value: noteData[1] }]);
+            playNote(note, startTime + noteData[0], -noteDuration, [{ type: ModificationType.Velocity, value: noteData[1] }], false);
          }
          expectedDuration = (duration && (duration < audioClip.getDuration())) ? duration : audioClip.getDuration();
       }

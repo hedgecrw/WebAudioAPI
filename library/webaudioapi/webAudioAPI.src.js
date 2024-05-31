@@ -996,20 +996,21 @@ export class WebAudioAPI {
     * @param {number} startTime - Global API time at which to start playing the note
     * @param {number} duration - {@link module:Constants.Duration Duration} for which to continue playing the note
     * @param {ModificationDetails|ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the note
+    * @param {boolean} [isDrumNote] - Optional flag indicating whether this note is a drum note (i.e., not affected by key or duration)
     * @returns {Promise<number>} Duration (in seconds) of the note being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
     * @see {@link module:Constants.ModificationType ModificationType}
     * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playNote(trackName, note, startTime, duration, modifications=[]) {
+   async playNote(trackName, note, startTime, duration, modifications=[], isDrumNote=false) {
       const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       else
          checkModifications(mods, true);
       const noteInKey = note ? (Number(note) + this.#key.offsets[Number(note) % 12]) : 0;
-      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods);
+      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods, isDrumNote);
    }
 
    /**
@@ -1030,13 +1031,14 @@ export class WebAudioAPI {
     * @param {Array<Array>} chord - Array of `[note, duration, mods]` corresponding to the chord to be played
     * @param {number} startTime - Global API time at which to start playing the chord
     * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the chord
+    * @param {boolean} [areDrumNotes] - Optional flag indicating whether this chord contains only drum notes (i.e., not affected by key or duration)
     * @returns {Promise<number>} Duration (in seconds) of the chord being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
     * @see {@link module:Constants.ModificationType ModificationType}
     * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playChord(trackName, chord, startTime, modifications=[]) {
+   async playChord(trackName, chord, startTime, modifications=[], areDrumNotes=false) {
       const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
@@ -1046,7 +1048,7 @@ export class WebAudioAPI {
          checkModifications(mods, true);
       for (const chordItem of chord)
          chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
-      return await this.#tracks[trackName].playChord(chord, Number(startTime), mods);
+      return await this.#tracks[trackName].playChord(chord, Number(startTime), mods, areDrumNotes);
    }
 
    /**
@@ -1068,13 +1070,14 @@ export class WebAudioAPI {
     * @param {Array<Array|Array<Array>>} sequence - Array of `[note, duration, mods]` and/or chords corresponding to the sequence to be played
     * @param {number} startTime - Global API time at which to start playing the sequence
     * @param {ModificationDetails[]} [modifications] - Optional individual or list of modifications to apply to the sequence
+    * @param {boolean} [areDrumNotes] - Optional flag indicating whether this sequence contains only drum notes (i.e., not affected by key or duration)
     * @returns {Promise<number>} Duration (in seconds) of the sequence being played
     * @see {@link module:Constants.Note Note}
     * @see {@link module:Constants.Duration Duration}
     * @see {@link module:Constants.ModificationType ModificationType}
     * @see {@link WebAudioAPI#getModification getModification()}
     */
-   async playSequence(trackName, sequence, startTime, modifications=[]) {
+   async playSequence(trackName, sequence, startTime, modifications=[], areDrumNotes=false) {
       const mods = (modifications ? (Array.isArray(modifications) ? modifications : [modifications]) : []);
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
@@ -1090,7 +1093,7 @@ export class WebAudioAPI {
          else
             sequenceItem[0] = sequenceItem[0] ? (Number(sequenceItem[0]) + this.#key.offsets[Number(sequenceItem[0]) % 12]) : 0;
       }
-      return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods);
+      return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods, areDrumNotes);
    }
 
    /**

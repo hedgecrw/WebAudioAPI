@@ -1018,7 +1018,7 @@ export class WebAudioAPI {
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       else
          checkModifications(mods, true);
-      return await this.#tracks[trackName].playNote(getNoteInKey(note, this.#key), Number(startTime), Number(duration), mods, isDrumNote);
+      return await this.#tracks[trackName].playNote(getNoteInKey(Number(note), this.#key), Number(startTime), Number(duration), mods, isDrumNote);
    }
 
    /**
@@ -1055,7 +1055,7 @@ export class WebAudioAPI {
       else
          checkModifications(mods, true);
       for (const chordItem of chord)
-         chordItem[0] = getNoteInKey(chordItem[0], this.#key);
+         chordItem[0] = getNoteInKey(Number(chordItem[0]), this.#key);
       return await this.#tracks[trackName].playChord(chord, Number(startTime), mods, areDrumNotes);
    }
 
@@ -1096,10 +1096,10 @@ export class WebAudioAPI {
       for (const sequenceItem of sequence) {
          if (Array.isArray(sequenceItem[0])) {
             for (const chordItem of sequenceItem)
-               chordItem[0] = getNoteInKey(chordItem[0], this.#key);
+               chordItem[0] = getNoteInKey(Number(chordItem[0]), this.#key);
          }
          else
-            sequenceItem[0] = getNoteInKey(sequenceItem[0], this.#key);
+            sequenceItem[0] = getNoteInKey(Number(sequenceItem[0]), this.#key);
       }
       return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods, areDrumNotes);
    }

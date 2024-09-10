@@ -85,6 +85,15 @@ function checkModifications(mods, forSingleNote) {
    }
 }
 
+function getNoteInKey(note, key) {
+   if (!note)
+      return 0;
+   else if (note < 0)
+      return -note;
+   else
+      return (note + key.offsets[note % 12]);
+}
+
 /** Contains all WebAudioAPI top-level functionality. */
 export class WebAudioAPI {
 
@@ -1009,8 +1018,7 @@ export class WebAudioAPI {
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       else
          checkModifications(mods, true);
-      const noteInKey = note ? (Number(note) + this.#key.offsets[Number(note) % 12]) : 0;
-      return await this.#tracks[trackName].playNote(noteInKey, Number(startTime), Number(duration), mods, isDrumNote);
+      return await this.#tracks[trackName].playNote(getNoteInKey(note, this.#key), Number(startTime), Number(duration), mods, isDrumNote);
    }
 
    /**
@@ -1047,7 +1055,7 @@ export class WebAudioAPI {
       else
          checkModifications(mods, true);
       for (const chordItem of chord)
-         chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
+         chordItem[0] = getNoteInKey(chordItem[0], this.#key);
       return await this.#tracks[trackName].playChord(chord, Number(startTime), mods, areDrumNotes);
    }
 
@@ -1088,10 +1096,10 @@ export class WebAudioAPI {
       for (const sequenceItem of sequence) {
          if (Array.isArray(sequenceItem[0])) {
             for (const chordItem of sequenceItem)
-               chordItem[0] = chordItem[0] ? (Number(chordItem[0]) + this.#key.offsets[Number(chordItem[0]) % 12]) : 0;
+               chordItem[0] = getNoteInKey(chordItem[0], this.#key);
          }
          else
-            sequenceItem[0] = sequenceItem[0] ? (Number(sequenceItem[0]) + this.#key.offsets[Number(sequenceItem[0]) % 12]) : 0;
+            sequenceItem[0] = getNoteInKey(sequenceItem[0], this.#key);
       }
       return await this.#tracks[trackName].playSequence(sequence, Number(startTime), mods, areDrumNotes);
    }
@@ -1160,7 +1168,7 @@ export class WebAudioAPI {
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
       if ((Number(velocity) < 0.0) || (Number(velocity) > 1.0))
          throw new WebAudioApiErrors.WebAudioValueError(`The target velocity value (${velocity}) is outside of the available range: [0.0, 1.0]`);
-      return await this.#tracks[trackName].playNoteAsync(note, Number(velocity));
+      return await this.#tracks[trackName].playNoteAsync(Number(note) < 0 ? -Number(note) : Number(note), Number(velocity));
    }
 
    /**
@@ -1174,7 +1182,7 @@ export class WebAudioAPI {
    async stopNote(trackName, note) {
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      this.#tracks[trackName].stopNoteAsync(note);
+      this.#tracks[trackName].stopNoteAsync(Number(note) < 0 ? -Number(note) : Number(note));
    }
 
    /**

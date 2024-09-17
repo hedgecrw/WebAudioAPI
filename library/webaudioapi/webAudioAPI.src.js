@@ -1420,18 +1420,32 @@ export class WebAudioAPI {
     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
     * @see {@link module:Constants.EncodingType EncodingType}
     */
-   async encodeAudioAs(encodingType, sampleRate, samples) {
+   async encodeAudioAs(encodingType, audioBuffer) {
       if (!Object.values(EncodingType).includes(Number(encodingType)))
          throw new WebAudioApiErrors.WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+      if (!(audioBuffer instanceof AudioBuffer))
+         throw new WebAudioApiErrors.WebAudioValueError('The passed-in audio buffer is not a valid AudioBuffer object');
+      return await getEncoderFor(Number(encodingType)).encode(audioBuffer);
+   }
+
+   /**
+    * Converts a 2D array of floating point `samples` into an {@link AudioBuffer} object with the specified `sampleRate`.
+    * 
+    * @param {number} sampleRate - Sample rate at which the audio data was recorded
+    * @param {Array<Array<number>>} samples - 2D array of floating point audio samples to encode
+    * @returns {AudioBuffer} Newly created {@link AudioBuffer} containing the audio data
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer AudioBuffer}
+    */
+   createAudioBufferFromSamples(sampleRate, samples) {
       if (!samples || !samples.length || !Array.isArray(samples) || !(Array.isArray(samples[0])) || !samples[0].length)
-         throw new WebAudioApiErrors.WebAudioValueError('Cannot encode these audio samples because they are not a 2D array of floats');
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot encode audio samples as they are not a 2D array of floats');
       const audioBuffer = this.#audioContext.createBuffer(samples.length, samples[0].length, sampleRate);
       for (let ch = 0; ch < samples.length; ++ch) {
          const channel_data = audioBuffer.getChannelData(ch);
          for (let i = 0; i < samples[ch].length; ++i)
             channel_data[i] = Math.min(Math.max(samples[ch][i], -1), 1);
       }
-      return await getEncoderFor(Number(encodingType)).encode(audioBuffer);
+      return audioBuffer;
    }
 
    /**

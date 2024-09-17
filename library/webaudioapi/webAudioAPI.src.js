@@ -454,13 +454,15 @@ export class WebAudioAPI {
    /**
     * Decodes an {@link ArrayBuffer} containing an audio clip into an {@link AudioBuffer} object.
     * 
-    * @param {ArrayBuffer} audioClip - Array buffer containing the audio clip to decode
+    * @param {ArrayBuffer|Blob} audioClip - Array buffer or blob containing the audio clip to decode
     * @returns {AudioBuffer} Decoded audio buffer for the specified audio clip
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer ArrayBuffer}
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
     */
    async decodeAudioClip(audioClip) {
-      if (!(audioClip instanceof ArrayBuffer))
-         throw new WebAudioApiErrors.WebAudioValueError('The specified audio clip must be of type ArrayBuffer for decoding');
-      return await this.#audioContext.decodeAudioData(audioClip);
+      if (!(audioClip instanceof ArrayBuffer || audioClip instanceof Blob))
+         throw new WebAudioApiErrors.WebAudioValueError('The specified audio clip must be of type ArrayBuffer or Blob for decoding');
+      return await this.#audioContext.decodeAudioData(audioClip instanceof ArrayBuffer ? audioClip : await audioClip.arrayBuffer());
    }
 
    /**

@@ -5,9 +5,11 @@
 
 import { EncodingType } from './Constants.mjs';
 import { WavFileEncoder } from '../encoders/WavFileEncoder.mjs';
+import { WebmOpusEncoder } from '../encoders/WebmOpusEncoder.mjs';
 
 const EncoderClasses = {
    [EncodingType.WAV]: WavFileEncoder,
+   [EncodingType.WEBM]: WebmOpusEncoder,
 };
 
 /**

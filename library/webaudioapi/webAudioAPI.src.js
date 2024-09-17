@@ -1409,6 +1409,32 @@ export class WebAudioAPI {
    }
 
    /**
+    * Encodes a 2D array of floating point `samples` into a {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    * containing raw audio data according to the specified `sampleRate` and {@link module:Constants.EncodingType EncodingType}
+    * specified in the `encodingType` parameter.
+    * 
+    * @param {number} encodingType - Numeric value corresponding to the desired {@link module:Constants.EncodingType EncodingType}
+    * @param {number} sampleRate - Sample rate at which the audio data was recorded
+    * @param {Array<Array<number>>} samples - 2D array of floating point audio samples to encode
+    * @returns {Blob} Data {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob} containing the newly encoded audio data
+    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Blob Blob}
+    * @see {@link module:Constants.EncodingType EncodingType}
+    */
+   async encodeAudioAs(encodingType, sampleRate, samples) {
+      if (!Object.values(EncodingType).includes(Number(encodingType)))
+         throw new WebAudioApiErrors.WebAudioTargetError(`An encoder for the target type identifier (${encodingType}) does not exist`);
+      if (!samples || !samples.length || !Array.isArray(samples) || !(Array.isArray(samples[0])) || !samples[0].length)
+         throw new WebAudioApiErrors.WebAudioValueError('Cannot encode these audio samples because they are not a 2D array of floats');
+      const audioBuffer = this.#audioContext.createBuffer(samples.length, samples[0].length, sampleRate);
+      for (let ch = 0; ch < samples.length; ++ch) {
+         const channel_data = audioBuffer.getChannelData(ch);
+         for (let i = 0; i < samples[ch].length; ++i)
+            channel_data[i] = Math.min(Math.max(samples[ch][i], -1), 1);
+      }
+      return await getEncoderFor(Number(encodingType)).encode(audioBuffer);
+   }
+
+   /**
     * Starts the {@link WebAudioAPI} library and allows audio playback to resume.
     */
    async start() {

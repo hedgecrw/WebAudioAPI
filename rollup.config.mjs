@@ -20,7 +20,8 @@ export default {
     eslint({
       exclude: [
         'package.json',
-        'library/webaudioapi/modules/Constants.mjs'
+        'library/webaudioapi/modules/Constants.mjs',
+        'library/webaudioapi/encoders/webm-muxer.min.mjs',
       ],
     }),
     json()

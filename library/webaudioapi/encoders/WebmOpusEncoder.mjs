@@ -24,12 +24,12 @@ export class WebmOpusEncoder extends EncoderBase {
       for (let ch = 0; ch < audioData.numberOfChannels; ++ch)
          audioInputDataFloats.set(audioData.getChannelData(ch), ch * audioData.length);
       const audioInput = new AudioData({ format: 'f32-planar',
-                                        sampleRate: audioData.sampleRate,
-                                        numberOfFrames: audioData.length,
-                                        numberOfChannels: audioData.numberOfChannels,
-                                        timestamp: 0,
-                                        data: audioInputData,
-                                        transfer: [audioInputData] });
+         sampleRate: audioData.sampleRate,
+         numberOfFrames: audioData.length,
+         numberOfChannels: audioData.numberOfChannels,
+         timestamp: 0,
+         data: audioInputData,
+         transfer: [audioInputData] });
       const bitRate = (encodingOptions && ('bitRate' in encodingOptions)) ? encodingOptions.bitRate : 96000;
       const audioEncoder = new AudioEncoder({ output: (chunk, meta) => webmMuxer.addAudioChunk(chunk, meta), error: e => console.error(e) });
       audioEncoder.configure({ codec: 'opus', sampleRate: audioData.sampleRate, numberOfChannels: 1, bitrate: bitRate });

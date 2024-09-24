@@ -90,7 +90,9 @@ export class Mordent extends ModificationBase {
       }
       if (!Number.isInteger(mordentNote) || (Number(mordentNote) < 1))
          throw new WebAudioApiErrors.WebAudioValueError(`The offset value (${mordentNote}) must be a positive integer > 0`);
-      const mordentNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const mordentNoteDuration = (this.unmodifiedDetails.duration >= 16) ?
+         (60.0 / ((3.0 * this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute)) :
+         (60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute));
       const primaryNoteDuration = ((this.unmodifiedDetails.duration < 0) ?
          -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute))) -
          (2 * mordentNoteDuration);

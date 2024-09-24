@@ -93,7 +93,9 @@ export class Turn extends ModificationBase {
          lowerNote -= Turn.lowerOffsetsMajor[lowerNote % 12];
          lowerNote += this.key.offsets[lowerNote % 12];
       }
-      const turnNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const turnNoteDuration = (this.unmodifiedDetails.duration >= 8) ?
+         (60.0 / ((5.0 * this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute)) :
+         (60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute));
       const primaryNoteDuration = ((this.unmodifiedDetails.duration < 0) ?
          -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute))) -
          (4 * turnNoteDuration);

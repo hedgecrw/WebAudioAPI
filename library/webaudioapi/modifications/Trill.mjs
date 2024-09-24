@@ -92,7 +92,9 @@ export class Trill extends ModificationBase {
       const trill = [];
       const fullNoteDuration = (this.unmodifiedDetails.duration < 0) ?
          -this.unmodifiedDetails.duration : (60.0 / ((this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute));
-      const trillNoteDuration = 60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute);
+      const trillNoteDuration = (this.unmodifiedDetails.duration >= 16) ?
+         (60.0 / ((3.0 * this.unmodifiedDetails.duration / this.tempo.beatBase) * this.tempo.beatsPerMinute)) :
+         (60.0 / ((32.0 / this.tempo.beatBase) * this.tempo.beatsPerMinute));
       const numNotes = Math.floor(fullNoteDuration / trillNoteDuration);
       for (let i = 0; i < numNotes; ++i)
          trill.push(new NoteDetails(

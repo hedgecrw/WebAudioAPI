@@ -127,6 +127,64 @@ export const ModificationType = {
 };
 
 /**
+ * Object representing modification types that conflict with one another.
+ * @constant {Object<number, number[]>}
+ */
+export const ModificationIncompatibilities = {
+   [ModificationType.Velocity]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                 ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Piano]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                              ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Forte]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                              ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.MezzoPiano]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                   ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.MezzoForte]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                   ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Pianissimo]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                   ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Fortissimo]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                   ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Pianississimo]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                      ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Fortississimo]: [ModificationType.Velocity, ModificationType.Piano, ModificationType.Forte, ModificationType.MezzoPiano, ModificationType.MezzoForte,
+                                      ModificationType.Pianissimo, ModificationType.Fortissimo, ModificationType.Pianississimo, ModificationType.Fortissimo],
+   [ModificationType.Crescendo]: [ModificationType.Crescendo, ModificationType.Decrescendo, ModificationType.Diminuendo],
+   [ModificationType.Decrescendo]: [ModificationType.Crescendo, ModificationType.Decrescendo, ModificationType.Diminuendo],
+   [ModificationType.Diminuendo]: [ModificationType.Crescendo, ModificationType.Decrescendo, ModificationType.Diminuendo],
+   [ModificationType.Accent]: [ModificationType.Accent, ModificationType.Marcato],
+   [ModificationType.Marcato]: [ModificationType.Accent, ModificationType.Marcato],
+   [ModificationType.Staccato]: [ModificationType.Staccato, ModificationType.Staccatissimo, ModificationType.Tenuto],
+   [ModificationType.Staccatissimo]: [ModificationType.Staccato, ModificationType.Staccatissimo, ModificationType.Tenuto],
+   [ModificationType.Tenuto]: [ModificationType.Staccato, ModificationType.Staccatissimo, ModificationType.Tenuto],
+   [ModificationType.OctaveShiftUp]: [ModificationType.OctaveShiftUp, ModificationType.OctaveShiftDown],
+   [ModificationType.OctaveShiftDown]: [ModificationType.OctaveShiftUp, ModificationType.OctaveShiftDown],
+   [ModificationType.GraceAcciaccatura]: [ModificationType.GraceAcciaccatura, ModificationType.GraceAppoggiatura],
+   [ModificationType.GraceAppoggiatura]: [ModificationType.GraceAcciaccatura, ModificationType.GraceAppoggiatura],
+   [ModificationType.Tuplet]: [ModificationType.Tuplet, ModificationType.Triplet, ModificationType.Quintuplet, ModificationType.Sextuplet, ModificationType.Septuplet],
+   [ModificationType.Triplet]: [ModificationType.Tuplet, ModificationType.Triplet, ModificationType.Quintuplet, ModificationType.Sextuplet, ModificationType.Septuplet],
+   [ModificationType.Quintuplet]: [ModificationType.Tuplet, ModificationType.Triplet, ModificationType.Quintuplet, ModificationType.Sextuplet, ModificationType.Septuplet],
+   [ModificationType.Sextuplet]: [ModificationType.Tuplet, ModificationType.Triplet, ModificationType.Quintuplet, ModificationType.Sextuplet, ModificationType.Septuplet],
+   [ModificationType.Septuplet]: [ModificationType.Tuplet, ModificationType.Triplet, ModificationType.Quintuplet, ModificationType.Sextuplet, ModificationType.Septuplet],
+   [ModificationType.TrillUpper]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                   ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.TrillLower]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                   ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.MordentUpper]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                     ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.MordentLower]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                     ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.TurnUpper]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                  ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.TurnLower]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                  ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.Glissando]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                  ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento],
+   [ModificationType.Portamento]: [ModificationType.TrillUpper, ModificationType.TrillLower, ModificationType.MordentUpper, ModificationType.MordentLower,
+                                   ModificationType.TurnUpper, ModificationType.TurnLower, ModificationType.Glissando, ModificationType.Portamento]
+};
+
+/**
  * Object representing a mapping between an acoustic analysis type and its unique internal code.
  * @constant {Object<string, number>}
  */

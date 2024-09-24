@@ -11,8 +11,8 @@
 
 import { canModifySequence, getModificationParameters, inferModificationParametersFromSequence,
    loadModification, NoteDetails, GlobalDynamic } from './Modification.mjs';
+import { EncodingType, AnalysisType, ModificationType, ModificationIncompatibilities } from './Constants.mjs';
 import { MidiCommand, getMidiCommand, getMidiNote, getMidiVelocity } from './Midi.mjs';
-import { EncodingType, AnalysisType, ModificationType } from './Constants.mjs';
 import * as WebAudioApiErrors from './Errors.mjs';
 import { getEncoderFor } from './Encoder.mjs';
 import { loadEffect } from './Effect.mjs';
@@ -302,7 +302,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
       // Remove any duplicate modifications, keeping only the last one
       const exists = [];
       for (let i = modifications.length - 1; i >= 0; --i)
-         if (exists.includes(modifications[i].type))
+         if (ModificationIncompatibilities[modifications[i].type].some(incompatibility => exists.includes(incompatibility)))
             modifications.splice(i, 1);
          else
             exists.push(modifications[i].type);

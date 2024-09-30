@@ -1184,7 +1184,7 @@ export class WebAudioAPI {
    async stopNote(trackName, note) {
       if (!(trackName in this.#tracks))
          throw new WebAudioApiErrors.WebAudioTargetError(`The target track name (${trackName}) does not exist`);
-      this.#tracks[trackName].stopNoteAsync(Number(note) < 0 ? -Number(note) : Number(note));
+      this.#tracks[trackName].stopNoteAsync(note);
    }
 
    /**

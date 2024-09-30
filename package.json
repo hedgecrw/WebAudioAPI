@@ -17,11 +17,11 @@
    },
    "private": true,
    "devDependencies": {
-      "@rollup/plugin-eslint": "^9.0.4",
-      "@rollup/plugin-json": "^6.0.0",
-      "@rollup/plugin-terser": "^0.4.3",
-      "jsdoc": "^4.0.2",
-      "rollup": "^3.25.1",
+      "@rollup/plugin-eslint": "^9.0.5",
+      "@rollup/plugin-json": "^6.1.0",
+      "@rollup/plugin-terser": "^0.4.4",
+      "jsdoc": "^4.0.3",
+      "rollup": "^4.22.5",
       "taffydb": "^2.7.3",
       "tui-jsdoc-template": "^1.2.2"
    },

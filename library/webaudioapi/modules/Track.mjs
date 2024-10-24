@@ -37,7 +37,7 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
    // Track-local variable definitions
    let instrument = null, midiDevice = null, audioDeviceInput = null;
    let currentVelocity = 0.5, chordIndex = 0, chordDynamicUpdated = false;
-   const audioSources = [], asyncAudioSources = [], effects = [], notesInWaiting = {}, waitingTies = [];
+   const audioSources = [], asyncAudioSources = [], effects = [], notesInWaiting = {};
    const audioSink = new AnalyserNode(audioContext, { fftSize: 1024, maxDecibels: -10.0, smoothingTimeConstant: 0.5 });
    const analysisBuffer = new Uint8Array(audioSink.frequencyBinCount);
    audioSink.connect(trackAudioSink);
@@ -276,26 +276,29 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
          throw new WebAudioApiErrors.WebAudioTrackError(`The current track (${name}) cannot play a note without first setting up an instrument`);
 
       // Infer missing modification details for any notes in waiting
-      const waitingNoteDetails = [], newTies = [];
-      for (const noteInWaitingPitch in notesInWaiting) {
-         const noteInWaiting = notesInWaiting[noteInWaitingPitch];
-         if (!fromChord || (noteInWaiting.chordIndex != chordIndex)) {
-            let noteDetails = [new NoteDetails(noteInWaiting.note, currentVelocity, noteInWaiting.duration)];
-            const sequence = [[noteInWaiting.note, noteInWaiting.duration], [note, duration]];
-            for (const modification of noteInWaiting.pendingModifications)
-               modification.value = inferModificationParametersFromSequence(modification.type, sequence, 1, modification.value);
-            for (const modification of noteInWaiting.modifications) {
-               const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
-               noteDetails = modClass.getModifiedNoteDetails(modification.value);
-               if (modification.type == ModificationType.Tie)
-                  newTies.push(noteDetails[0].note);
-               for (const noteDetail of noteDetails) {
-                  noteDetail.startTimeOffset -= (startTime - noteInWaiting.startTime);
-                  noteDetail.wasWaitingNote = true;
+      let wasTied = false;
+      const waitingNoteDetails = [];
+      if (!modifications.some(el => el.type === ModificationType.Tie)) {
+         for (const noteInWaitingPitch in notesInWaiting) {
+            const noteInWaiting = notesInWaiting[noteInWaitingPitch];
+            if ((!fromChord || (noteInWaiting.chordIndex != chordIndex)) && (!noteInWaiting.modifications.some(el => el.type === ModificationType.Tie) || noteInWaiting.note === note)) {
+               let noteDetails = [new NoteDetails(noteInWaiting.note, currentVelocity, noteInWaiting.duration)];
+               const sequence = noteInWaiting.sequence.concat([[note, duration]]);
+               for (const modification of noteInWaiting.modifications)
+                  modification.value = inferModificationParametersFromSequence(modification.type, sequence, 1, modification.value);
+               for (const modification of noteInWaiting.modifications) {
+                  const modClass = loadModification(modification.type, tempo, keySignature, noteDetails[0]);
+                  noteDetails = modClass.getModifiedNoteDetails(modification.value);
+                  if (modification.type == ModificationType.Tie)
+                     wasTied = true;
+                  for (const noteDetail of noteDetails) {
+                     noteDetail.startTimeOffset -= (startTime - noteInWaiting.startTime);
+                     noteDetail.wasWaitingNote = true;
+                  }
                }
+               delete notesInWaiting[noteInWaitingPitch];
+               waitingNoteDetails.push(...noteDetails);
             }
-            delete notesInWaiting[noteInWaitingPitch];
-            waitingNoteDetails.push(...noteDetails);
          }
       }
 
@@ -313,6 +316,8 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
       // Get concrete note details based on any applied modifications
       let requiresWaiting = false, totalDurationSeconds = 0.0;
       let noteDetails = [new NoteDetails(note, currentVelocity, duration)];
+      for (const noteInWaitingPitch in notesInWaiting)
+         notesInWaiting[noteInWaitingPitch].addedToSeq = false;
       for (const modification of modifications) {
 
          // Determine if the modification requires that we wait for the next note to infer missing details
@@ -322,8 +327,13 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
             for (const neededParam of neededParams)
                if (!('value' in modification) || !(neededParam in modification.value) && ((neededParams.length > 1) || !('implicit' in modification.value))) {
                   if (!(note in notesInWaiting))
-                     notesInWaiting[note] = { note: note, duration: duration, startTime: startTime, chordIndex: chordIndex, modifications: modifications, pendingModifications: [] };
-                  notesInWaiting[note].pendingModifications.push(modification);
+                     notesInWaiting[note] = { note: note, duration: duration, startTime: startTime, chordIndex: chordIndex, modifications: [], addedToSeq: false, sequence: [] };
+                  if (!notesInWaiting[note].addedToSeq) {
+                     notesInWaiting[note].addedToSeq = true;
+                     notesInWaiting[note].sequence.push([note, duration]);
+                  }
+                  if (!notesInWaiting[note].modifications.some(el => el.type == modification.type))
+                     notesInWaiting[note].modifications.push(modification);
                   requiresWaiting = modRequiresWaiting = true;
                }
          }
@@ -338,32 +348,24 @@ export function createTrack(name, audioContext, tempo, keySignature, trackAudioS
                currentVelocity = noteDetails[0].velocity;
                chordDynamicUpdated = fromChord;
             }
-            else if (modification.type == ModificationType.Tie)
-               newTies.push(noteDetails[0].note);
          }
          else
             totalDurationSeconds = (noteDetails[0].usedDuration < 0) ? -noteDetails[0].usedDuration : (60.0 / ((noteDetails[0].usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
       }
 
       // Schedule all notes for playback
-      noteDetails = (requiresWaiting ? waitingNoteDetails : waitingNoteDetails.concat(noteDetails));
+      noteDetails = (requiresWaiting || wasTied ? waitingNoteDetails : waitingNoteDetails.concat(noteDetails));
       for (const note of noteDetails) {
          const durationSeconds = (note.duration < 0) ? -note.duration : (60.0 / ((note.duration / tempo.beatBase) * tempo.beatsPerMinute));
-         if (waitingTies.includes(note.note))
-            waitingTies.splice(waitingTies.indexOf(note.note), 1);
-         else {
-            const noteSource = instrument.getNote(note.note);
-            const noteVolume = new GainNode(audioContext, { gain: note.velocity });
-            noteSource.connect(noteVolume).connect(audioSink);
-            if (!isDrumNote)
-               noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
-            noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
-            audioSources.push(noteSource);
-            noteSource.start(startTime + note.startTimeOffset, 0, isDrumNote ? undefined : (durationSeconds + 0.200));
-         }
-         if (newTies.includes(note.note))
-            waitingTies.push(newTies.splice(newTies.indexOf(note.note), 1)[0]);
-         if (!note.wasWaitingNote)
+         const noteSource = instrument.getNote(note.note);
+         const noteVolume = new GainNode(audioContext, { gain: note.velocity });
+         noteSource.connect(noteVolume).connect(audioSink);
+         if (!isDrumNote)
+            noteVolume.gain.setTargetAtTime(0.0, startTime + note.startTimeOffset + durationSeconds, 0.03);
+         noteSource.onended = sourceEnded.bind(this, noteSource, noteVolume);
+         audioSources.push(noteSource);
+         noteSource.start(startTime + note.startTimeOffset, 0, isDrumNote ? undefined : (durationSeconds + 0.200));
+         if (!note.wasWaitingNote || wasTied)
             totalDurationSeconds += (note.usedDuration <= 0) ? -note.usedDuration : (60.0 / ((note.usedDuration / tempo.beatBase) * tempo.beatsPerMinute));
       }
       return totalDurationSeconds;

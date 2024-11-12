@@ -75,7 +75,9 @@ export class Tuplet extends ModificationBase {
       return [new NoteDetails(
          this.unmodifiedDetails.note,
          this.unmodifiedDetails.velocity,
-         this.unmodifiedDetails.duration * (Number(details.numNotes) / Number(details.intoNumNotes))
+         this.unmodifiedDetails.duration * (Number(details.numNotes) / Number(details.intoNumNotes)),
+         undefined,
+         this.unmodifiedDetails.usedDuration * (Number(details.numNotes) / Number(details.intoNumNotes))
       )];
    }
 }

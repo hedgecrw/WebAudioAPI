@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - run: npm install && make demos && make assets && make docs
       - run: mv build/lib build/demos/ && mv -f build/docs/* build/demos/
       - run: tar --directory build/demos/ -hcf artifact.tar .
@@ -26,6 +26,7 @@ jobs:
         with:
           name: github-pages
           path: ./artifact.tar
+          overwrite: true
           retention-days: 1
 
   # Deploy the artifact to GitHub pages
@@ -40,4 +41,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4

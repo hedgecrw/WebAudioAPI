@@ -20,7 +20,7 @@ import * as WebAudioApiErrors from './Errors.mjs';
  * 
  * @param {AudioContext} audioContext - Reference to the global browser {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
  * @param {string} name - Name of the instrument to load
- * @param {string|[Uint8Array]|null} url_or_data - URL pointing to the instrument data to load,
+ * @param {string|Array<Uint8Array>|null} url_or_data - URL pointing to the instrument data to load,
  *                                                 the instrument data itself, or `null`
  * @returns {Promise<Instrument>} Newly loaded {@link Instrument}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioContext AudioContext}
@@ -177,7 +177,6 @@ export async function loadInstrument(audioContext, name, url_or_data) {
 
    // Actually load and return the instrument
    console.log('Loading instrument:', name + '...');
-   console.log('using new version!!!');
    if (url_or_data == null) {
       instrumentInstance.getNote = function (note) {
          return new OscillatorNode(audioContext, { frequency: Frequency[note] });
@@ -188,16 +187,15 @@ export async function loadInstrument(audioContext, name, url_or_data) {
    }
    else if (url_or_data instanceof Array) {
       instrumentInstance.getNote = function (note) {
-         if (note < 0 || note > url_or_data.length)
-	    throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is not defined`);
+         if (note < 0 || note >= url_or_data.length)
+            throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is not defined`);
          return new AudioBufferSourceNode(audioContext, { buffer: url_or_data[note] });
-      }
-      instrumentInstance.getNoteOffline = function (note) {
-         if (note < 0 || note > url_or_data.length)
-	    throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is not defined`);
+      };
+      instrumentInstance.getNoteOffline = function (offlineContext, note) {
+         if (note < 0 || note >= url_or_data.length)
+            throw new WebAudioApiErrors.WebAudioInstrumentError(`The specified note (${note}) is not defined`);
          return new AudioBufferSourceNode(offlineContext, { buffer: url_or_data[note] });
-      }
-
+      };
    }
    else {
       const [noteData, metadata] = await loadInstrument(url_or_data);

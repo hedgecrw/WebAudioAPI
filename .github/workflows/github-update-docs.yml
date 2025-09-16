@@ -22,7 +22,7 @@ jobs:
       - run: npm install && make demos && make assets && make docs
       - run: mv build/lib build/demos/ && mv -f build/docs/* build/demos/
       - run: tar --directory build/demos/ -hcf artifact.tar .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: github-pages
           path: ./artifact.tar
